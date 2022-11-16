@@ -19,7 +19,7 @@ jobs:
         run: chmod +x gradlew
       
       - name: Compile
-        run: ./gradlew build -x test
+        run: ./gradlew build -x test -x writeBranchName -x writeCommitHash
 
       - name: Test
         run: ./gradlew test
