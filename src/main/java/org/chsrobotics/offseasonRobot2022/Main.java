@@ -11,10 +11,10 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
 See the GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License along with SpartanLib2. 
+You should have received a copy of the GNU General Public License along with this program. 
 If not, see <https://www.gnu.org/licenses/>.
 */
-package frc.robot;
+package org.chsrobotics.offseasonRobot2022;
 
 import edu.wpi.first.wpilibj.RobotBase;
 

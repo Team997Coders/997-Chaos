@@ -1,0 +1,40 @@
+{
+  "Docking": {
+    "Data": [
+      "DockSpace ID=0x8B93E3BD Window=0xA787BDB4 Pos=0,19 Size=1366,686 CentralNode=1"
+    ]
+  },
+  "MainWindow": {
+    "GLOBAL": {
+      "height": "705",
+      "maximized": "0",
+      "style": "0",
+      "userScale": "2",
+      "width": "1366",
+      "xpos": "4",
+      "ypos": "40"
+    }
+  },
+  "Window": {
+    "###NetworkTables": {
+      "Collapsed": "0",
+      "Pos": "362,44",
+      "Size": "710,594"
+    },
+    "###NetworkTables Settings": {
+      "Collapsed": "0",
+      "Pos": "28,28",
+      "Size": "254,77"
+    },
+    "Debug##Default": {
+      "Collapsed": "0",
+      "Pos": "60,60",
+      "Size": "400,400"
+    },
+    "DockSpaceViewport_11111111": {
+      "Collapsed": "0",
+      "Pos": "0,19",
+      "Size": "1366,686"
+    }
+  }
+}

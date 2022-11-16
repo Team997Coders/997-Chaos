@@ -1,5 +1,8 @@
 *.wpilog
 
+src/main/deploy/branch.txt
+src/main/deploy/commit.txt
+
 # This gitignore has been specially created by the WPILib team.
 # If you remove items from this file, intellisense might break.
 
@@ -159,6 +162,3 @@ gradle-app.setting
 .project
 .settings/
 bin/
-
-# Simulation GUI and other tools window save file
-*-window.json

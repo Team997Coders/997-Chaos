@@ -11,23 +11,25 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
 See the GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License along with SpartanLib2. 
+You should have received a copy of the GNU General Public License along with this program. 
 If not, see <https://www.gnu.org/licenses/>.
 */
-package frc.robot;
+package org.chsrobotics.offseasonRobot2022;
 
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import org.chsrobotics.lib.telemetry.HighLevelLogger;
 
 public class Robot extends TimedRobot {
     private Command autonomousCommand;
 
-    private RobotContainer robotContainer;
+    private final RobotContainer robotContainer = new RobotContainer();
 
     @Override
     public void robotInit() {
-        robotContainer = new RobotContainer();
+        HighLevelLogger.startLogging();
+        robotContainer.scheduleStartupCommands();
     }
 
     @Override
