@@ -38,16 +38,16 @@ public final class Constants {
         }
 
         public static final class DrivetrainConstants {
-            public static final int FRONT_RIGHT_CANID = 1;
-            public static final int BACK_RIGHT_CANID = 2;
-            public static final int FRONT_LEFT_CANID = 3;
-            public static final int BACK_LEFT_CANID = 4;
+            public static final int FRONT_RIGHT_CANID = 2;
+            public static final int BACK_RIGHT_CANID = 4;
+            public static final int FRONT_LEFT_CANID = 1;
+            public static final int BACK_LEFT_CANID = 2;
 
-            public static final int LEFT_ENCODER_CHANNEL_A = 1;
-            public static final int LEFT_ENCODER_CHANNEL_B = 2;
+            public static final int LEFT_ENCODER_CHANNEL_A = 4;
+            public static final int LEFT_ENCODER_CHANNEL_B = 5;
 
-            public static final int RIGHT_ENCODER_CHANNEL_A = 3;
-            public static final int RIGHT_ENCODER_CHANNEL_B = 4;
+            public static final int RIGHT_ENCODER_CHANNEL_A = 2;
+            public static final int RIGHT_ENCODER_CHANNEL_B = 3;
 
             public static final int ENCODER_CPR = 2048;
 
