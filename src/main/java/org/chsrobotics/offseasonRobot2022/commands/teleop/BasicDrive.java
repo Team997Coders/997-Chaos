@@ -50,10 +50,10 @@ public class BasicDrive extends CommandBase {
     @Override
     public void execute() {
         drivetrain.setVoltages(
-                Constants.GlobalConstants.GLOBAL_NOMINAL_VOLTAGE
-                        * (linInput.get() + rotInput.get()),
-                Constants.GlobalConstants.GLOBAL_NOMINAL_VOLTAGE
-                        * (linInput.get() - rotInput.get()));
+                Constants.GlobalConstants.GLOBAL_NOMINAL_VOLTAGE_VOLTS
+                        * (linInput.get() - rotInput.get()),
+                Constants.GlobalConstants.GLOBAL_NOMINAL_VOLTAGE_VOLTS
+                        * (linInput.get() + rotInput.get()));
     }
 
     @Override

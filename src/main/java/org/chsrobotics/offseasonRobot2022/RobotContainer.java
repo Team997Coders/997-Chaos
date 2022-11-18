@@ -25,7 +25,6 @@ import org.chsrobotics.offseasonRobot2022.Constants.InputConstants;
 import org.chsrobotics.offseasonRobot2022.commands.teleop.BasicDrive;
 import org.chsrobotics.offseasonRobot2022.commands.util.CalibrateIMU;
 import org.chsrobotics.offseasonRobot2022.subsystems.Drivetrain;
-import org.chsrobotics.offseasonRobot2022.subsystems.InertialMeasurementUnit;
 
 public class RobotContainer {
     private final Joystick driveJoystick;
@@ -33,7 +32,6 @@ public class RobotContainer {
     private final Drivetrain drivetrain;
     private final BasicDrive basicDrive;
 
-    private final InertialMeasurementUnit IMU;
     private final CalibrateIMU calibrateIMU;
 
     public RobotContainer() {
@@ -48,8 +46,7 @@ public class RobotContainer {
                                 driveJoystick.getRawAxis(
                                         InputConstants.JOYSTICK_RIGHT_HORIZONTAL_AXIS));
 
-        IMU = new InertialMeasurementUnit();
-        calibrateIMU = new CalibrateIMU(IMU);
+        calibrateIMU = new CalibrateIMU(drivetrain);
 
         configureButtonBindings();
 

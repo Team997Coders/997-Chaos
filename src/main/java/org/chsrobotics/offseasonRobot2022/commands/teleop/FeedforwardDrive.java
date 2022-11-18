@@ -16,6 +16,7 @@ If not, see <https://www.gnu.org/licenses/>.
 */
 package org.chsrobotics.offseasonRobot2022.commands.teleop;
 
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import java.util.function.Supplier;
 import org.chsrobotics.offseasonRobot2022.Constants.CommandConstants.TeleopDriveCommandConstants;
@@ -26,6 +27,17 @@ public class FeedforwardDrive extends CommandBase {
     private final Drivetrain drivetrain;
     private final Supplier<Double> linearInput;
     private final Supplier<Double> rotationalInput;
+
+    private final SimpleMotorFeedforward rightFeedforward =
+            new SimpleMotorFeedforward(
+                    TeleopDriveCommandConstants.RIGHT_KS,
+                    TeleopDriveCommandConstants.RIGHT_KV,
+                    TeleopDriveCommandConstants.RIGHT_KA);
+    private final SimpleMotorFeedforward leftFeedforward =
+            new SimpleMotorFeedforward(
+                    TeleopDriveCommandConstants.LEFT_KS,
+                    TeleopDriveCommandConstants.LEFT_KV,
+                    TeleopDriveCommandConstants.LEFT_KA);
 
     /**
      * Constructs a FeedforwardDrive.
@@ -50,9 +62,7 @@ public class FeedforwardDrive extends CommandBase {
         double left = linearInput.get() + rotationalInput.get();
         double right = linearInput.get() - rotationalInput.get();
 
-        drivetrain.setVoltages(
-                TeleopDriveCommandConstants.LEFT_FEEDFORWARD.calculate(left),
-                TeleopDriveCommandConstants.RIGHT_FEEDFORWARD.calculate(right));
+        drivetrain.setVoltages(leftFeedforward.calculate(left), rightFeedforward.calculate(right));
     }
 
     @Override

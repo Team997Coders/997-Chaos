@@ -16,14 +16,12 @@ If not, see <https://www.gnu.org/licenses/>.
 */
 package org.chsrobotics.offseasonRobot2022;
 
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
-import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.wpilibj.SerialPort.Port;
 import org.chsrobotics.lib.util.GearRatioHelper;
 
 public final class Constants {
     public static final class GlobalConstants {
-        public static final double GLOBAL_NOMINAL_VOLTAGE = 11.5;
+        public static final double GLOBAL_NOMINAL_VOLTAGE_VOLTS = 11.5;
     }
 
     public static final class InputConstants {
@@ -33,10 +31,6 @@ public final class Constants {
     }
 
     public static final class SubsystemConstants {
-        public static final class InertialMeasurementUnitConstants {
-            public static final Port IMU_PORT = Port.kUSB;
-        }
-
         public static final class DrivetrainConstants {
             public static final int FRONT_RIGHT_CANID = 2;
             public static final int BACK_RIGHT_CANID = 4;
@@ -51,22 +45,54 @@ public final class Constants {
 
             public static final int ENCODER_CPR = 2048;
 
-            public static final LinearFilter RIGHT_ENCODER_VELOCITY_SMOOTHING =
-                    LinearFilter.movingAverage(5);
-            public static final LinearFilter LEFT_ENCODER_VELOCITY_SMOOTHING =
-                    LinearFilter.movingAverage(5);
+            public static final boolean LEFT_MOTORS_INVERTED = true;
+            public static final boolean RIGHT_MOTORS_INVERTED = false;
 
-            public static final GearRatioHelper ENCODER_TO_GROUND_HELPER =
-                    new GearRatioHelper(1, 7);
+            public static final boolean LEFT_ENCODER_INVERTED = true;
+            public static final boolean RIGHT_ENCODER_INVERTED = true;
+
+            public static final int RIGHT_ENCODER_VELOCITY_SMOOTHING_SAMPLES = 5;
+            public static final int LEFT_ENCODER_VELOCITY_SMOOTHING_SAMPLES = 5;
+
+            public static final double RIGHT_ENCODER_NOISE_DISPLACEMENT_METERS_STDDEV = 0;
+            public static final double LEFT_ENCODER_NOISE_DISPLACEMENT_METERS_STDDEV = 0;
+
+            public static final double RIGHT_ENCODER_NOISE_VELOCITY_METERSPERSECOND_STDDEV = 0;
+            public static final double LEFT_ENCODER_NOISE_VELOCITY_METERSPERSECOND_STDDEV = 0;
+
+            public static final double TRACKWIDTH_EFFECTIVE_M = 1;
+
+            public static final double WHEEL_DIAMETER_M = 0.152;
+
+            public static final GearRatioHelper MOTOR_TO_WHEEL_HELPER =
+                    new GearRatioHelper(1, 10.49);
+
+            public static final double MODEL_ROT_KS = 1; // volts
+            public static final double MODEL_ROT_KV = 2; // volts per (m/s)
+            public static final double MODEL_ROT_KA = 4; // volts per (m/s^2)
+
+            public static final double MODEL_LIN_KS = 1; // volts
+            public static final double MODEL_LIN_KV = 2; // volts per (m/s)
+            public static final double MODEL_LIN_KA = 4; // volts per (m/s^2)
+
+            public static final Port NAVX_PORT = Port.kMXP;
+
+            public static final double GYRO_NOISE_ANGLE_RADIANS_STDDEV = 0;
+
+            public static final double ODOMETRY_NOISE_X_METERS_STDDEV = 0;
+            public static final double ODOMETRY_NOISE_Y_METERS_STDDEV = 0;
         }
     }
 
     public static final class CommandConstants {
         public static final class TeleopDriveCommandConstants {
-            public static final SimpleMotorFeedforward LEFT_FEEDFORWARD =
-                    new SimpleMotorFeedforward(0, 0, 0);
-            public static final SimpleMotorFeedforward RIGHT_FEEDFORWARD =
-                    new SimpleMotorFeedforward(0, 0, 0);
+            public static final double LEFT_KS = 0;
+            public static final double LEFT_KV = 0;
+            public static final double LEFT_KA = 0;
+
+            public static final double RIGHT_KS = 0;
+            public static final double RIGHT_KV = 0;
+            public static final double RIGHT_KA = 0;
         }
     }
 }

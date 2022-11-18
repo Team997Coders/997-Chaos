@@ -19,21 +19,21 @@ package org.chsrobotics.offseasonRobot2022.commands.util;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import org.chsrobotics.lib.telemetry.HighLevelLogger;
-import org.chsrobotics.offseasonRobot2022.subsystems.InertialMeasurementUnit;
+import org.chsrobotics.offseasonRobot2022.subsystems.Drivetrain;
 
 /** Command to trigger the calibration sequence of the robot's IMU. */
 public class CalibrateIMU extends CommandBase {
     private final Timer timer = new Timer();
-    private final InertialMeasurementUnit IMU;
+    private final Drivetrain drive;
 
     /**
      * Constructs a CalibrateIMU command.
      *
-     * @param IMU The IMU to calibrate.
+     * @param IMU The drivetrain to calibrate the IMU of.
      */
-    public CalibrateIMU(InertialMeasurementUnit IMU) {
-        addRequirements(IMU);
-        this.IMU = IMU;
+    public CalibrateIMU(Drivetrain drive) {
+        addRequirements(drive);
+        this.drive = drive;
     }
 
     @Override
@@ -43,7 +43,7 @@ public class CalibrateIMU extends CommandBase {
 
     @Override
     public void initialize() {
-        IMU.startCalibration();
+        drive.startCalibration();
         timer.reset();
         timer.start();
         HighLevelLogger.logMessage("CalibrateIMU started");
@@ -57,6 +57,6 @@ public class CalibrateIMU extends CommandBase {
 
     @Override
     public boolean isFinished() {
-        return IMU.isCalibrated();
+        return drive.isCalibrated();
     }
 }
