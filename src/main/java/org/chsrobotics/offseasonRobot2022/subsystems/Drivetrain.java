@@ -25,36 +25,46 @@ import edu.wpi.first.hal.simulation.SimDeviceDataJNI;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.wpilibj.Encoder;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.DifferentialDrivetrainSim;
 import edu.wpi.first.wpilibj.simulation.EncoderSim;
-import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import org.chsrobotics.lib.telemetry.Logger;
+import org.chsrobotics.offseasonRobot2022.Constants.LocalizationConstants;
 import org.chsrobotics.offseasonRobot2022.Constants.SubsystemConstants.DrivetrainConstants;
 import org.chsrobotics.offseasonRobot2022.Robot;
 
 /** Drivetrain subsystem of the robot, containing drive motors and encoders. */
 public class Drivetrain extends SubsystemBase {
-    private final VictorSPX frontLeft;
-    private final VictorSPX backLeft;
+    private final VictorSPX frontLeft = new VictorSPX(DrivetrainConstants.FRONT_LEFT_CANID);
+    private final VictorSPX backLeft = new VictorSPX(DrivetrainConstants.BACK_LEFT_CANID);
 
-    private final VictorSPX frontRight;
-    private final VictorSPX backRight;
+    private final VictorSPX frontRight = new VictorSPX(DrivetrainConstants.FRONT_RIGHT_CANID);
+    private final VictorSPX backRight = new VictorSPX(DrivetrainConstants.BACK_RIGHT_CANID);
 
     private double leftSideAppliedVoltage = 0;
     private double rightSideAppliedVoltage = 0;
 
-    private final Encoder rightEncoder;
-    private final Encoder leftEncoder;
+    private double robotCenterAbsDistanceMeters = 0;
 
-    private final LinearFilter rightEncoderVelocityFilter;
-    private final LinearFilter leftEncoderVelocityFilter;
+    private final Encoder rightEncoder =
+            new Encoder(
+                    DrivetrainConstants.RIGHT_ENCODER_CHANNEL_A,
+                    DrivetrainConstants.RIGHT_ENCODER_CHANNEL_B);
+    private final Encoder leftEncoder =
+            new Encoder(
+                    DrivetrainConstants.LEFT_ENCODER_CHANNEL_A,
+                    DrivetrainConstants.LEFT_ENCODER_CHANNEL_B);
+
+    private final LinearFilter rightEncoderVelocityFilter =
+            LinearFilter.movingAverage(DrivetrainConstants.ENCODER_VELOCITY_SMOOTHING_SAMPLES);
+    private final LinearFilter leftEncoderVelocityFilter =
+            LinearFilter.movingAverage(DrivetrainConstants.ENCODER_VELOCITY_SMOOTHING_SAMPLES);
 
     private final String subdirString = "drivetrain";
 
@@ -66,101 +76,66 @@ public class Drivetrain extends SubsystemBase {
             new Logger<>("rightVelocityMetersPerSecond", subdirString);
     private final Logger<Double> leftVelocityLogger =
             new Logger<>("leftVelocityMetersPerSecond", subdirString);
-    private final Logger<Double> odometryXLogger = new Logger<>("odometryXMeters", subdirString);
-    private final Logger<Double> odometryYLogger = new Logger<>("odometryYMeters", subdirString);
 
-    private AHRS IMU;
+    private final Logger<Double> frontRightCurrentLogger =
+            new Logger<>("frontRightCurrentAmps", subdirString);
+    private final Logger<Double> backRightCurrentLogger =
+            new Logger<>("backRightCurrentAmps", subdirString);
+    private final Logger<Double> frontLeftCurrentLogger =
+            new Logger<>("frontLeftCurrentAmps", subdirString);
+    private final Logger<Double> backLeftCurrentLogger =
+            new Logger<>("backLeftCurrentAmps", subdirString);
+
+    private final AHRS IMU = new AHRS(DrivetrainConstants.NAVX_PORT);
     private boolean calibrationStarted = false;
 
     private final Logger<Double> gyroAngleLogger = new Logger<>("gyroAngleRads", subdirString);
     private final Logger<Boolean> calibrationStateLogger =
             new Logger<>("isCalibrating", subdirString);
 
-    private SimDouble simAngleRadians;
+    private SimDouble simAngleRadians =
+            new SimDouble(
+                    SimDeviceDataJNI.getSimValueHandle(
+                            SimDeviceDataJNI.getSimDeviceHandle("navX-Sensor[0]"), "Yaw"));
     private final Timer simCalibrationTimer = new Timer();
 
-    private EncoderSim rightEncoderSim;
-    private EncoderSim leftEncoderSim;
+    private EncoderSim rightEncoderSim = new EncoderSim(rightEncoder);
+    private EncoderSim leftEncoderSim = new EncoderSim(leftEncoder);
 
-    private DifferentialDrivetrainSim drivetrainSim;
-
-    private final DifferentialDriveOdometry odometry;
-    private final Field2d odometryDisplay = new Field2d();
+    private DifferentialDrivetrainSim drivetrainSim =
+            new DifferentialDrivetrainSim(
+                    LinearSystemId.identifyDrivetrainSystem(
+                            DrivetrainConstants.MODEL_LIN_KV,
+                            DrivetrainConstants.MODEL_LIN_KA,
+                            DrivetrainConstants.MODEL_ROT_KV,
+                            DrivetrainConstants.MODEL_ROT_KA,
+                            DrivetrainConstants.TRACKWIDTH_EFFECTIVE_M),
+                    DCMotor.getMiniCIM(2),
+                    (1 / DrivetrainConstants.MOTOR_TO_WHEEL_HELPER.toDoubleRatioInputToOutput()),
+                    DrivetrainConstants.TRACKWIDTH_EFFECTIVE_M,
+                    DrivetrainConstants.WHEEL_DIAMETER_M,
+                    VecBuilder.fill(
+                            LocalizationConstants.ODOMETRY_ERROR_METERS_STDDEV,
+                            LocalizationConstants.ODOMETRY_ERROR_METERS_STDDEV,
+                            DrivetrainConstants.GYRO_ERROR_ANGLE_RADIANS_STDDEV,
+                            DrivetrainConstants.ENCODER_ERROR_VELOCITY_METERSPERSECOND_STDDEV,
+                            DrivetrainConstants.ENCODER_ERROR_VELOCITY_METERSPERSECOND_STDDEV,
+                            DrivetrainConstants.ENCODER_ERROR_DISPLACEMENT_METERS_STDDEV,
+                            DrivetrainConstants.ENCODER_ERROR_DISPLACEMENT_METERS_STDDEV));
 
     /** Constructs a Drivetrain. */
     public Drivetrain() {
-        frontLeft = new VictorSPX(DrivetrainConstants.FRONT_LEFT_CANID);
-        backLeft = new VictorSPX(DrivetrainConstants.BACK_LEFT_CANID);
-
-        frontRight = new VictorSPX(DrivetrainConstants.FRONT_RIGHT_CANID);
-        backRight = new VictorSPX(DrivetrainConstants.BACK_RIGHT_CANID);
-
         frontLeft.setInverted(DrivetrainConstants.LEFT_MOTORS_INVERTED);
         backLeft.setInverted(DrivetrainConstants.LEFT_MOTORS_INVERTED);
 
         frontRight.setInverted(DrivetrainConstants.RIGHT_MOTORS_INVERTED);
         backRight.setInverted(DrivetrainConstants.RIGHT_MOTORS_INVERTED);
 
-        rightEncoder =
-                new Encoder(
-                        DrivetrainConstants.RIGHT_ENCODER_CHANNEL_A,
-                        DrivetrainConstants.RIGHT_ENCODER_CHANNEL_B);
-        leftEncoder =
-                new Encoder(
-                        DrivetrainConstants.LEFT_ENCODER_CHANNEL_A,
-                        DrivetrainConstants.LEFT_ENCODER_CHANNEL_B);
-
         rightEncoder.setDistancePerPulse(1);
         leftEncoder.setDistancePerPulse(1);
 
         leftEncoder.setReverseDirection(DrivetrainConstants.LEFT_ENCODER_INVERTED);
         rightEncoder.setReverseDirection(DrivetrainConstants.RIGHT_ENCODER_INVERTED);
-
-        rightEncoderVelocityFilter =
-                LinearFilter.movingAverage(
-                        DrivetrainConstants.RIGHT_ENCODER_VELOCITY_SMOOTHING_SAMPLES);
-        leftEncoderVelocityFilter =
-                LinearFilter.movingAverage(
-                        DrivetrainConstants.LEFT_ENCODER_VELOCITY_SMOOTHING_SAMPLES);
-
-        if (Robot.isReal()) {
-            IMU = new AHRS(DrivetrainConstants.NAVX_PORT);
-        } else {
-            int navXSimHandle = SimDeviceDataJNI.getSimDeviceHandle("navX-Sensor[0]");
-            simAngleRadians =
-                    new SimDouble(SimDeviceDataJNI.getSimValueHandle(navXSimHandle, "Yaw"));
-
-            rightEncoderSim = new EncoderSim(rightEncoder);
-            leftEncoderSim = new EncoderSim(leftEncoder);
-
-            drivetrainSim =
-                    new DifferentialDrivetrainSim(
-                            LinearSystemId.identifyDrivetrainSystem(
-                                    DrivetrainConstants.MODEL_LIN_KV,
-                                    DrivetrainConstants.MODEL_LIN_KA,
-                                    DrivetrainConstants.MODEL_ROT_KV,
-                                    DrivetrainConstants.MODEL_ROT_KA,
-                                    DrivetrainConstants.TRACKWIDTH_EFFECTIVE_M),
-                            DCMotor.getMiniCIM(2),
-                            (1
-                                    / DrivetrainConstants.MOTOR_TO_WHEEL_HELPER
-                                            .toDoubleRatioInputToOutput()),
-                            DrivetrainConstants.TRACKWIDTH_EFFECTIVE_M,
-                            DrivetrainConstants.WHEEL_DIAMETER_M,
-                            VecBuilder.fill(
-                                    DrivetrainConstants.ODOMETRY_NOISE_X_METERS_STDDEV,
-                                    DrivetrainConstants.ODOMETRY_NOISE_Y_METERS_STDDEV,
-                                    DrivetrainConstants.GYRO_NOISE_ANGLE_RADIANS_STDDEV,
-                                    DrivetrainConstants
-                                            .LEFT_ENCODER_NOISE_VELOCITY_METERSPERSECOND_STDDEV,
-                                    DrivetrainConstants
-                                            .RIGHT_ENCODER_NOISE_VELOCITY_METERSPERSECOND_STDDEV,
-                                    DrivetrainConstants
-                                            .LEFT_ENCODER_NOISE_DISPLACEMENT_METERS_STDDEV,
-                                    DrivetrainConstants
-                                            .RIGHT_ENCODER_NOISE_DISPLACEMENT_METERS_STDDEV));
-        }
-        odometry = new DifferentialDriveOdometry(getRotationGyro());
     }
 
     /**
@@ -175,11 +150,16 @@ public class Drivetrain extends SubsystemBase {
 
         leftSideAppliedVoltage = leftSideVoltage;
         rightSideAppliedVoltage = rightSideVoltage;
-        frontLeft.set(ControlMode.PercentOutput, leftSideVoltage / frontLeft.getBusVoltage());
-        backLeft.set(ControlMode.PercentOutput, leftSideVoltage / backLeft.getBusVoltage());
 
-        frontRight.set(ControlMode.PercentOutput, rightSideVoltage / frontRight.getBusVoltage());
-        backRight.set(ControlMode.PercentOutput, rightSideVoltage / backRight.getBusVoltage());
+        frontLeft.set(
+                ControlMode.PercentOutput, leftSideVoltage / RobotController.getBatteryVoltage());
+        backLeft.set(
+                ControlMode.PercentOutput, leftSideVoltage / RobotController.getBatteryVoltage());
+
+        frontRight.set(
+                ControlMode.PercentOutput, rightSideVoltage / RobotController.getBatteryVoltage());
+        backRight.set(
+                ControlMode.PercentOutput, rightSideVoltage / RobotController.getBatteryVoltage());
     }
 
     /**
@@ -306,27 +286,43 @@ public class Drivetrain extends SubsystemBase {
         return (calibrationStarted && !isCalibrating());
     }
 
+    /**
+     * Returns the total distance travelled by center of the robot since initialization.
+     *
+     * @return The total absolute distance, in meters.
+     */
+    public double getAbsDistanceMeters() {
+        return robotCenterAbsDistanceMeters;
+    }
+
     @Override
     public void periodic() {
-        odometry.update(
-                getRotationGyro(), getLeftSideDistanceMeters(), getLeftSideDistanceMeters());
-        odometryDisplay.setRobotPose(odometry.getPoseMeters());
-
-        odometryXLogger.update(odometry.getPoseMeters().getX());
-        odometryYLogger.update(odometry.getPoseMeters().getY());
+        robotCenterAbsDistanceMeters +=
+                Math.abs(
+                        ((getRightSideVelocityMetersPerSecond() * Robot.kDefaultPeriod)
+                                        + (getLeftSideVelocityMetersPerSecond()
+                                                * Robot.kDefaultPeriod))
+                                / 2);
 
         leftPositionLogger.update(getLeftSideDistanceMeters());
         rightPositionLogger.update(getRightSideDistanceMeters());
         leftVelocityLogger.update(getLeftSideVelocityMetersPerSecond());
         rightVelocityLogger.update(getRightSideVelocityMetersPerSecond());
 
+        frontLeftCurrentLogger.update(
+                Robot.getCurrentAmps(DrivetrainConstants.FRONT_LEFT_PDP_CHANNEL));
+        backLeftCurrentLogger.update(
+                Robot.getCurrentAmps(DrivetrainConstants.BACK_LEFT_PDP_CHANNEL));
+        frontRightCurrentLogger.update(
+                Robot.getCurrentAmps(DrivetrainConstants.FRONT_RIGHT_PDP_CHANNEL));
+        backRightCurrentLogger.update(
+                Robot.getCurrentAmps(DrivetrainConstants.BACK_RIGHT_PDP_CHANNEL));
+
         SmartDashboard.putNumber("left", getLeftSideDistanceMeters());
         SmartDashboard.putNumber("right", getRightSideDistanceMeters());
 
         gyroAngleLogger.update(getRotationGyro().getRadians());
         calibrationStateLogger.update(isCalibrating());
-
-        SmartDashboard.putData(odometryDisplay);
     }
 
     @Override
@@ -335,7 +331,9 @@ public class Drivetrain extends SubsystemBase {
 
         drivetrainSim.setInputs(leftSideAppliedVoltage, rightSideAppliedVoltage);
 
-        double metersToTicksScaling = (1 / (2 * Math.PI * DrivetrainConstants.WHEEL_DIAMETER_M));
+        double metersToTicksScaling =
+                (DrivetrainConstants.ENCODER_CPR
+                        / (2 * Math.PI * DrivetrainConstants.WHEEL_DIAMETER_M));
 
         rightEncoderSim.setCount(
                 (int) (drivetrainSim.getRightPositionMeters() * metersToTicksScaling));

@@ -16,29 +16,87 @@ If not, see <https://www.gnu.org/licenses/>.
 */
 package org.chsrobotics.offseasonRobot2022;
 
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.PowerDistribution;
+import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import org.chsrobotics.lib.telemetry.HighLevelLogger;
+import org.chsrobotics.lib.telemetry.Logger;
 
 public class Robot extends TimedRobot {
+
+    public enum State {
+        DISABLED_FMS,
+        DISABLED_NOFMS,
+        TELEOP_FMS,
+        TELEOP_NOFMS,
+        AUTO_FMS,
+        AUTO_NOFMS,
+        TEST_NOFMS,
+        ESTOPPED_FMS,
+        ESTOPPED_NOFMS
+    }
+
     private Command autonomousCommand;
 
+    private static final PowerDistribution pdp = new PowerDistribution(0, ModuleType.kCTRE);
+
     private final RobotContainer robotContainer = new RobotContainer();
+
+    private final String subdirString = "System";
+
+    private final Logger<Boolean> isBrownedOutLogger = new Logger<>("isBrownedOut", subdirString);
+
+    private final Logger<Double> canUtilizationLogger =
+            new Logger<>(
+                    HighLevelLogger.getLog(), "canUtilizationPercent", subdirString, false, true);
+    private final Logger<Double> batteryVoltageLogger =
+            new Logger<>(
+                    HighLevelLogger.getLog(), "batteryVoltageVolts", subdirString, false, true);
+    private final Logger<Double> totalCurrentLogger =
+            new Logger<>(HighLevelLogger.getLog(), "totalCurrentAmps", subdirString, false, true);
+    private final Logger<Double> logger3p3vCurrent =
+            new Logger<>(HighLevelLogger.getLog(), "3p3vCurrentAmps", subdirString, false, true);
+    private final Logger<Double> logger5vCurrent =
+            new Logger<>(HighLevelLogger.getLog(), "5vCurrentAmps", subdirString, false, true);
+
+    private State previousRobotState = null;
 
     @Override
     public void robotInit() {
         HighLevelLogger.startLogging();
+        HighLevelLogger.logMessage("*******ROBOT STARTUP*******");
+        HighLevelLogger.logMessage("997 Offseason 2022: CHAOS");
         robotContainer.scheduleStartupCommands();
     }
 
     @Override
     public void robotPeriodic() {
         CommandScheduler.getInstance().run();
+
+        canUtilizationLogger.update(RobotController.getCANStatus().percentBusUtilization);
+        batteryVoltageLogger.update(RobotController.getBatteryVoltage());
+        totalCurrentLogger.update(pdp.getTotalCurrent());
+        logger3p3vCurrent.update(RobotController.getCurrent3V3());
+        logger5vCurrent.update(RobotController.getCurrent5V());
+
+        isBrownedOutLogger.update(
+                (RobotController.getBatteryVoltage() <= RobotController.getBrownoutVoltage()));
+
+        robotContainer.periodic();
+
+        previousRobotState = getRobotState();
     }
 
     @Override
-    public void disabledInit() {}
+    public void disabledInit() {
+        if (previousRobotState == State.TELEOP_FMS || previousRobotState == State.TELEOP_NOFMS) {
+            robotContainer.logShutdownData();
+        }
+    }
 
     @Override
     public void disabledPeriodic() {}
@@ -78,4 +136,44 @@ public class Robot extends TimedRobot {
 
     @Override
     public void simulationPeriodic() {}
+
+    /**
+     * Returns the current state (disabled, auto, teleop, etc...) of the robot through the driver's
+     * station.
+     *
+     * @return The current state of the robot.
+     */
+    public State getRobotState() {
+        if (DriverStation.isFMSAttached()) {
+            if (DriverStation.isTeleop()) return State.TELEOP_FMS;
+            else if (DriverStation.isAutonomous()) return State.AUTO_FMS;
+            else if (DriverStation.isEStopped()) return State.ESTOPPED_FMS;
+            else return State.DISABLED_FMS;
+        } else {
+            if (DriverStation.isTeleop()) return State.TELEOP_NOFMS;
+            else if (DriverStation.isAutonomous()) return State.AUTO_NOFMS;
+            else if (DriverStation.isEStopped()) return State.ESTOPPED_NOFMS;
+            else if (DriverStation.isTest()) return State.TEST_NOFMS;
+            else return State.DISABLED_NOFMS;
+        }
+    }
+
+    /**
+     * Returns the current output by a channel of the PDP.
+     *
+     * @param channel The channel (in [0,15], inclusive) to query.
+     * @return The current in amperes of that channel.
+     */
+    public static double getCurrentAmps(int channel) {
+        return pdp.getCurrent(channel);
+    }
+
+    /**
+     * Returns the total energy output by the Power Distribution Panel.
+     *
+     * @return The total energy since last robot restart, in joules.
+     */
+    public static double getTotalEnergyJoules() {
+        return pdp.getTotalEnergy();
+    }
 }

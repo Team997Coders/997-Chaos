@@ -51,14 +51,14 @@ public class BasicDrive extends CommandBase {
     public void execute() {
         drivetrain.setVoltages(
                 Constants.GlobalConstants.GLOBAL_NOMINAL_VOLTAGE_VOLTS
-                        * (linInput.get() - rotInput.get()),
+                        * (linInput.get() + rotInput.get()),
                 Constants.GlobalConstants.GLOBAL_NOMINAL_VOLTAGE_VOLTS
-                        * (linInput.get() + rotInput.get()));
+                        * (linInput.get() - rotInput.get()));
     }
 
     @Override
     public void end(boolean interrupted) {
         drivetrain.setVoltages(0, 0);
-        HighLevelLogger.logMessage("BasicDrive command ended: " + interrupted);
+        HighLevelLogger.logMessage("BasicDrive command ended (interrupted: " + interrupted + ")");
     }
 }
