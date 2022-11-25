@@ -23,11 +23,13 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
 import org.chsrobotics.lib.telemetry.HighLevelLogger;
+import org.chsrobotics.lib.util.DashboardChooser;
 import org.chsrobotics.offseasonRobot2022.Constants.InputConstants;
+import org.chsrobotics.offseasonRobot2022.Constants.SubsystemConstants.VisionConstants;
 import org.chsrobotics.offseasonRobot2022.aprilTags.AprilTag;
 import org.chsrobotics.offseasonRobot2022.aprilTags.TagLayout;
+import org.chsrobotics.offseasonRobot2022.commands.auto.TrajectoryFollower;
 import org.chsrobotics.offseasonRobot2022.commands.teleop.BasicDrive;
 import org.chsrobotics.offseasonRobot2022.commands.util.CalibrateIMU;
 import org.chsrobotics.offseasonRobot2022.subsystems.Drivetrain;
@@ -38,7 +40,7 @@ public class RobotContainer {
 
     private final Drivetrain drivetrain = new Drivetrain();
 
-    private final Vision vision = new Vision();
+    private final Vision vision = new Vision(VisionConstants.CAMERA_1_NAME);
 
     private final TagLayout testLayout =
             new TagLayout(new AprilTag(0, new Pose3d(5, 5, 0, new Rotation3d())));
@@ -46,17 +48,25 @@ public class RobotContainer {
     private final BasicDrive basicDrive =
             new BasicDrive(
                     drivetrain,
-                    () -> driveJoystick.getRawAxis(InputConstants.JOYSTICK_LEFT_VERTICAL_AXIS),
-                    () -> driveJoystick.getRawAxis(InputConstants.JOYSTICK_RIGHT_HORIZONTAL_AXIS));
+                    // () -> driveJoystick.getRawAxis(InputConstants.JOYSTICK_LEFT_VERTICAL_AXIS),
+                    // () ->
+                    // driveJoystick.getRawAxis(InputConstants.JOYSTICK_RIGHT_HORIZONTAL_AXIS));
+                    () -> -driveJoystick.getRawAxis(1),
+                    () -> -driveJoystick.getRawAxis(0));
 
     private final CalibrateIMU calibrateIMU = new CalibrateIMU(drivetrain);
 
     private final Localizer localizer = new Localizer(drivetrain, vision, new Pose2d(), testLayout);
 
+    private final DashboardChooser<Paths> autoModeChooser =
+            DashboardChooser.fromEnum(Paths.class, Paths.noneTraj, true);
+
     public RobotContainer() {
         configureButtonBindings();
 
         setDefaultCommands();
+
+        SmartDashboard.putData(autoModeChooser);
     }
 
     private void configureButtonBindings() {}
@@ -66,13 +76,14 @@ public class RobotContainer {
     }
 
     public Command getAutonomousCommand() {
-        return new InstantCommand();
+        return new TrajectoryFollower(
+                drivetrain, localizer, autoModeChooser.getSelected().trajectory, true);
     }
 
     /** Schedules all commands that should run when the robot is initialized. */
     public void scheduleStartupCommands() {
-        CommandScheduler.getInstance().schedule(calibrateIMU);
         HighLevelLogger.logMessage("Startup commands scheduled");
+        CommandScheduler.getInstance().schedule(calibrateIMU);
     }
 
     /** Method called once every robot cycle to perform RobotContainer-specific periodic tasks. */

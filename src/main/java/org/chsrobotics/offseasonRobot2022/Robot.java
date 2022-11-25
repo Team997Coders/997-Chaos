@@ -71,6 +71,8 @@ public class Robot extends TimedRobot {
         HighLevelLogger.logMessage("*******ROBOT STARTUP*******");
         HighLevelLogger.logMessage("997 Offseason 2022: CHAOS");
         robotContainer.scheduleStartupCommands();
+
+        DriverStation.startDataLog(HighLevelLogger.getLog(), true);
     }
 
     @Override
@@ -143,7 +145,7 @@ public class Robot extends TimedRobot {
      *
      * @return The current state of the robot.
      */
-    public State getRobotState() {
+    public static State getRobotState() {
         if (DriverStation.isFMSAttached()) {
             if (DriverStation.isTeleop()) return State.TELEOP_FMS;
             else if (DriverStation.isAutonomous()) return State.AUTO_FMS;

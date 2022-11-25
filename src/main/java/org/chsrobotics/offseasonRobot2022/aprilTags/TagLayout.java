@@ -20,9 +20,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+/** Object (temporary) representing a group of tags on a field. */
 public class TagLayout {
     private final HashMap<Integer, List<AprilTag>> storedTags = new HashMap<>();
 
+    /**
+     * Constructs a TagLayout.
+     *
+     * @param tags The tags to include as part of the layout.
+     */
     public TagLayout(AprilTag... tags) {
         for (AprilTag tag : tags) {
             List<AprilTag> tagsAtID = storedTags.get(tag.getID());
@@ -38,23 +44,29 @@ public class TagLayout {
     }
 
     /**
-     * @param id
-     * @return
+     * Returns whether an AprilTag exists with a specific ID.
+     *
+     * @param id The fiducial ID to check for.
+     * @return If an AprilTag exists at the ID.
      */
     public boolean tagExistsAtID(int id) {
         return storedTags.containsKey(id);
     }
 
     /**
-     * @param id
-     * @return
+     * Returns a list of all AprilTags with a specific fiducial ID.
+     *
+     * @param id The fiducial ID to query.
+     * @return A list of all the AprilTags at that ID. May be empty.
      */
     public List<AprilTag> getTagsAtID(int id) {
         return storedTags.get(id);
     }
 
     /**
-     * @return
+     * Returns a list of all AprilTags.
+     *
+     * @return A list of all the AprilTags in the layout. May be empty.
      */
     public List<AprilTag> getAllTags() {
         List<AprilTag> retVals = new ArrayList<>();

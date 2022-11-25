@@ -19,6 +19,7 @@ package org.chsrobotics.offseasonRobot2022;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -40,7 +41,10 @@ import org.photonvision.SimVisionSystem;
 import org.photonvision.SimVisionTarget;
 import org.photonvision.targeting.PhotonTrackedTarget;
 
-/** */
+/**
+ * The Localizer is used for fusing pose estimates from multiple sources into a more-accurate,
+ * global, field-relative pose estimate.
+ */
 public class Localizer {
     private final Drivetrain drive;
     private final Vision vision;
@@ -56,10 +60,10 @@ public class Localizer {
 
     private final SimVisionSystem simVision =
             new SimVisionSystem(
-                    VisionConstants.CAMERA_NAME,
+                    VisionConstants.CAMERA_1_NAME,
                     VisionConstants.DIAGONAL_FOV_DEGREES,
                     VisionConstants.CAMERA_PITCH_DEGREES,
-                    VisionConstants.TRANSFORMATION_CAMERA_TO_ROBOT,
+                    VisionConstants.TRANSFORMATION_ROBOT_TO_CAMERA.inverse(),
                     VisionConstants.CAMERA_HEIGHT_METERS,
                     9001,
                     VisionConstants.CAMERA_RESOLUTION_HORIZONTAL,
@@ -67,10 +71,12 @@ public class Localizer {
                     VisionConstants.CONTOUR_THRESHOLD);
 
     /**
-     * @param drive
-     * @param vision
-     * @param initialPose
-     * @param layout
+     * Constructs a Localizer.
+     *
+     * @param drive The Drivetrain subsystem to use for odometry.
+     * @param vision The Vision subsystem to use for vision-derived pose estimates.
+     * @param initialPose The initial pose of the robot on the field.
+     * @param layout The layout containing the AprilTags of the field environment.
      */
     public Localizer(Drivetrain drive, Vision vision, Pose2d initialPose, TagLayout layout) {
         poseEstimator =
@@ -100,7 +106,8 @@ public class Localizer {
 
         for (AprilTag tag : layout.getAllTags()) {
             fullField
-                    .getObject(((Integer) tag.hashCode()).toString())
+                    .getObject("AprilTag: " + tag.getID())
+                    // TODO: currently does not support multiple tags with the same ID
                     .setPose(tag.getPlacement().toPose2d());
             simVision.addSimVisionTarget(
                     new SimVisionTarget(
@@ -108,7 +115,10 @@ public class Localizer {
         }
     }
 
-    /** */
+    /**
+     * Advances the pose estimator by a time increment. Note that this should be called exactly once
+     * per loop.
+     */
     public void update() {
         ArrayList<Pose2d> visionPoses = new ArrayList<>();
         for (PhotonTrackedTarget target : vision.getAllTags()) {
@@ -124,7 +134,7 @@ public class Localizer {
                         PhotonUtils.estimateFieldToRobot(
                                 cameraToTarget,
                                 nearestTag.getPlacement().toPose2d(),
-                                VisionConstants.TRANSFORMATION_CAMERA_TO_ROBOT));
+                                VisionConstants.TRANSFORMATION_ROBOT_TO_CAMERA.inverse()));
             }
         }
 
@@ -142,16 +152,41 @@ public class Localizer {
                 drive.getRightSideDistanceMeters());
 
         if (!visionPoses.isEmpty()) {
+            for (Pose2d visionPose : visionPoses) {
+                fullField.getObject("" + visionPose.hashCode()).setPose(visionPose);
+            }
+
             // TODO: actually get best pose
             Pose2d bestVisionPose = visionPoses.get(0);
 
             poseEstimator.addVisionMeasurement(
-                    bestVisionPose,
-                    Timer.getFPGATimestamp()
-                            - Units.millisecondsToSeconds(vision.getLatencyMillis()));
+                    bestVisionPose, Timer.getFPGATimestamp() - vision.getLatencySeconds());
         }
 
+        Pose2d cameraPose =
+                getFusedPose().transformBy(VisionConstants.TRANSFORMATION_ROBOT_TO_CAMERA);
+        double partialCamFOV = Units.degreesToRadians(VisionConstants.HORIZONTAL_FOV_DEGREES / 2);
+        double camFOVDisplayMagnitudeMeters = 1;
         fullField.getObject("pureOdometry").setPose(getOdometryPose());
+        fullField.getObject("cam1").setPose(cameraPose);
+        fullField
+                .getObject("cam1RightLimit")
+                .setPose(
+                        cameraPose.transformBy(
+                                new Transform2d(
+                                        new Translation2d(
+                                                camFOVDisplayMagnitudeMeters / 2,
+                                                new Rotation2d(-partialCamFOV)),
+                                        new Rotation2d(-partialCamFOV))));
+        fullField
+                .getObject("cam1LeftLimit")
+                .setPose(
+                        cameraPose.transformBy(
+                                new Transform2d(
+                                        new Translation2d(
+                                                camFOVDisplayMagnitudeMeters / 2,
+                                                new Rotation2d(partialCamFOV)),
+                                        new Rotation2d(partialCamFOV))));
         fullField.setRobotPose(getFusedPose());
 
         cleanField.setRobotPose(getFusedPose());
@@ -162,36 +197,48 @@ public class Localizer {
     }
 
     /**
-     * @param poseMeters
+     * Sets the pose of the robot on the field.
+     *
+     * @param poseMeters The new pose, in meters, of the robot.
      */
     public void setPose(Pose2d poseMeters) {
         drive.resetEncoders();
         poseEstimator.resetPosition(poseMeters, drive.getRotationGyro());
+        odometry.resetPosition(poseMeters, drive.getRotationGyro());
     }
 
     /**
-     * @return
+     * Returns the current fused pose estimate.
+     *
+     * @return The estimated pose, in meters, of the robot on the field.
      */
     public Pose2d getFusedPose() {
         return poseEstimator.getEstimatedPosition();
     }
 
     /**
-     * @return
+     * Returns the pose estimate from only odometry.
+     *
+     * @return The odometry-derived pose, in meters, of the robot on the field.
      */
     public Pose2d getOdometryPose() {
         return odometry.getPoseMeters();
     }
 
     /**
-     * @return
+     * Returns a Field2d populated with both a representation of the robot pose, and additional
+     * localization information indicators.
+     *
+     * @return A Field2d with fused pose, odometry pose, camera FOV indicators, and AprilTags.
      */
     public Field2d getFullField() {
         return fullField;
     }
 
     /**
-     * @return
+     * Returns a Field2d solely populated with a representation of the robot pose.
+     *
+     * @return A Field2d with only the fused pose estimate.
      */
     public Field2d getCleanField() {
         return cleanField;

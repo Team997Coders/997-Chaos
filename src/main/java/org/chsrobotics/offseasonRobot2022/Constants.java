@@ -41,18 +41,19 @@ public final class Constants {
 
     public static final class SubsystemConstants {
         public static final class VisionConstants {
-            public static final String CAMERA_NAME = "default";
+            public static final String CAMERA_1_NAME = "default";
 
-            public static final double DIAGONAL_FOV_DEGREES = 180;
+            public static final double DIAGONAL_FOV_DEGREES = 148;
+            public static final double HORIZONTAL_FOV_DEGREES = 118;
 
             public static final double CAMERA_PITCH_DEGREES = 0;
             public static final double CAMERA_HEIGHT_METERS = 0;
 
-            public static final Transform2d TRANSFORMATION_CAMERA_TO_ROBOT =
-                    new Transform2d(new Translation2d(0, 0), new Rotation2d(0));
+            public static final Transform2d TRANSFORMATION_ROBOT_TO_CAMERA =
+                    new Transform2d(new Translation2d(0.2, 0.2), new Rotation2d(0));
 
-            public static final int CAMERA_RESOLUTION_HORIZONTAL = 360;
-            public static final int CAMERA_RESOLUTION_VERTICAL = 360;
+            public static final int CAMERA_RESOLUTION_HORIZONTAL = 640;
+            public static final int CAMERA_RESOLUTION_VERTICAL = 480;
 
             public static final double CONTOUR_THRESHOLD = 1;
 
@@ -64,7 +65,7 @@ public final class Constants {
             public static final int FRONT_RIGHT_CANID = 2;
             public static final int BACK_RIGHT_CANID = 4;
             public static final int FRONT_LEFT_CANID = 1;
-            public static final int BACK_LEFT_CANID = 2;
+            public static final int BACK_LEFT_CANID = 3;
 
             public static final int FRONT_RIGHT_PDP_CHANNEL = 1; // change these
             public static final int BACK_RIGHT_PDP_CHANNEL = 2;
@@ -102,9 +103,13 @@ public final class Constants {
             public static final double MODEL_ROT_KV = 2.3; // volts per (m/s)
             public static final double MODEL_ROT_KA = 0.4; // volts per (m/s^2)
 
-            public static final double MODEL_LIN_KS = 0.75; // volts
-            public static final double MODEL_LIN_KV = 2.3; // volts per (m/s)
-            public static final double MODEL_LIN_KA = 0.4; // volts per (m/s^2)
+            public static final double MODEL_LIN_KS = 0.57; // volts
+            public static final double MODEL_LIN_KV = 2.15; // volts per (m/s)
+            public static final double MODEL_LIN_KA = 0.5; // volts per (m/s^2)
+
+            public static final double WHEEL_VELOCITY_KP = 0.1;
+            public static final double WHEEL_VELOCITY_KI = 0;
+            public static final double WHEEL_VELOCITY_KD = 0;
 
             public static final Port NAVX_PORT = Port.kMXP;
 
@@ -112,5 +117,10 @@ public final class Constants {
         }
     }
 
-    public static final class CommandConstants {}
+    public static final class CommandConstants {
+        public static final class TrajectoryFollowerConstants {
+            public static final double RAMSETE_CONVERGENCE = 2;
+            public static final double RAMSETE_DAMPING = 0.7;
+        }
+    }
 }

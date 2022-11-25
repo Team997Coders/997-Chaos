@@ -169,7 +169,6 @@ public class Drivetrain extends SubsystemBase {
      */
     public double getLeftSideDistanceMeters() {
         return (leftEncoder.getDistance() / DrivetrainConstants.ENCODER_CPR)
-                * 2
                 * Math.PI
                 * DrivetrainConstants.WHEEL_DIAMETER_M;
     }
@@ -181,7 +180,6 @@ public class Drivetrain extends SubsystemBase {
      */
     public double getRightSideDistanceMeters() {
         return (rightEncoder.getDistance() / DrivetrainConstants.ENCODER_CPR)
-                * 2
                 * Math.PI
                 * DrivetrainConstants.WHEEL_DIAMETER_M;
     }
@@ -194,7 +192,6 @@ public class Drivetrain extends SubsystemBase {
     public double getLeftSideVelocityMetersPerSecond() {
         return leftEncoderVelocityFilter.calculate(
                 (leftEncoder.getRate() / DrivetrainConstants.ENCODER_CPR)
-                        * 2
                         * Math.PI
                         * DrivetrainConstants.WHEEL_DIAMETER_M);
     }
@@ -207,7 +204,6 @@ public class Drivetrain extends SubsystemBase {
     public double getRightSideVelocityMetersPerSecond() {
         return rightEncoderVelocityFilter.calculate(
                 (rightEncoder.getRate() / DrivetrainConstants.ENCODER_CPR)
-                        * 2
                         * Math.PI
                         * DrivetrainConstants.WHEEL_DIAMETER_M);
     }
@@ -333,7 +329,7 @@ public class Drivetrain extends SubsystemBase {
 
         double metersToTicksScaling =
                 (DrivetrainConstants.ENCODER_CPR
-                        / (2 * Math.PI * DrivetrainConstants.WHEEL_DIAMETER_M));
+                        / (Math.PI * DrivetrainConstants.WHEEL_DIAMETER_M));
 
         rightEncoderSim.setCount(
                 (int) (drivetrainSim.getRightPositionMeters() * metersToTicksScaling));

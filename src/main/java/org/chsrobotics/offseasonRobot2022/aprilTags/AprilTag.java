@@ -18,13 +18,16 @@ package org.chsrobotics.offseasonRobot2022.aprilTags;
 
 import edu.wpi.first.math.geometry.Pose3d;
 
+/** Object (temporary) representing an AprilTag's fiducial ID and its pose on a field. */
 public class AprilTag {
     private final int id;
     private final Pose3d placement;
 
     /**
-     * @param id
-     * @param placement
+     * Constructs an AprilTag.
+     *
+     * @param id The fiducial ID of the tag.
+     * @param placement The pose of the tag on the field.
      */
     public AprilTag(int id, Pose3d placement) {
         this.id = id;
@@ -32,16 +35,18 @@ public class AprilTag {
     }
 
     /**
-     * @return
+     * Returns the fiducial ID of this tag.
+     *
+     * @return The ID associated with the tag's pattern.
      */
     public int getID() {
         return id;
     }
 
     /**
-     * s
+     * Returns the placement of the tag on the field.
      *
-     * @return
+     * @return A pose representing the tag's position on the field.
      */
     public Pose3d getPlacement() {
         return placement;
