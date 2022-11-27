@@ -14,7 +14,7 @@ See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with this program. 
 If not, see <https://www.gnu.org/licenses/>.
 */
-package org.chsrobotics.offseasonRobot2022.commands.auto;
+package org.chsrobotics.offseasonRobot2022.commands.drive;
 
 import com.pathplanner.lib.PathPlannerTrajectory;
 import com.pathplanner.lib.PathPlannerTrajectory.EventMarker;
@@ -24,11 +24,12 @@ import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
+import edu.wpi.first.math.trajectory.Trajectory.State;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import java.util.ArrayList;
 import java.util.List;
+import org.chsrobotics.lib.telemetry.Logger;
 import org.chsrobotics.offseasonRobot2022.Constants.CommandConstants.TrajectoryFollowerConstants;
 import org.chsrobotics.offseasonRobot2022.Constants.SubsystemConstants.DrivetrainConstants;
 import org.chsrobotics.offseasonRobot2022.Localizer;
@@ -70,6 +71,23 @@ public class TrajectoryFollower extends CommandBase {
 
     private final DifferentialDriveKinematics kinematics =
             new DifferentialDriveKinematics(DrivetrainConstants.TRACKWIDTH_EFFECTIVE_M);
+
+    private final String subdirString = "trajectoryFollower";
+
+    private final Logger<Double[]> trajectoryFollowerPoseSetpointLogger =
+            new Logger<>("trajectoryFollowerPoseSetpointMeters", subdirString);
+    private final Logger<Double[]> trajectoryFollowerStateSetpointLogger =
+            new Logger<>("trajectoryFollowerStateSetpoint", subdirString);
+
+    private final Logger<Double> trajectoryFollowerRadPerSecSetpointLogger =
+            new Logger<>("trajectoryFollowerRadPerSecSetpoint", subdirString);
+    private final Logger<Double> trajectoryFollowerMPerSecSetpointLogger =
+            new Logger<>("trajectoryFollowerMPerSecSetpoint", subdirString);
+
+    private final Logger<Double> trajectoryFollowerLeftVelocitySetpointLogger =
+            new Logger<>("trajectoryFollowerLeftVelocityMPerSecSetpoint", subdirString);
+    private final Logger<Double> trajectoryFollowerRightVelocitySetpointLogger =
+            new Logger<>("trajectoryFollowerRightVelocityMPerSecSetpoint", subdirString);
 
     /**
      * Constructs a TrajectoryFollower command.
@@ -129,17 +147,34 @@ public class TrajectoryFollower extends CommandBase {
     @Override
     public void execute() {
         if (trajectory != null) {
-            ChassisSpeeds frameRates =
-                    controller.calculate(
-                            localization.getFusedPose(), trajectory.sample(timer.get()));
+
+            State setpoint = trajectory.sample(timer.get());
+
+            trajectoryFollowerStateSetpointLogger.update(
+                    new Double[] {
+                        setpoint.accelerationMetersPerSecondSq,
+                        setpoint.curvatureRadPerMeter,
+                        setpoint.timeSeconds,
+                        setpoint.velocityMetersPerSecond
+                    });
+            trajectoryFollowerPoseSetpointLogger.update(
+                    new Double[] {
+                        setpoint.poseMeters.getX(),
+                        setpoint.poseMeters.getY(),
+                        setpoint.poseMeters.getRotation().getRadians()
+                    });
+
+            ChassisSpeeds frameRates = controller.calculate(localization.getFusedPose(), setpoint);
+
+            trajectoryFollowerMPerSecSetpointLogger.update(frameRates.vxMetersPerSecond);
+            trajectoryFollowerRadPerSecSetpointLogger.update(frameRates.omegaRadiansPerSecond);
 
             DifferentialDriveWheelSpeeds wheelVelocities = kinematics.toWheelSpeeds(frameRates);
 
-            SmartDashboard.putNumber("right setpoint", wheelVelocities.rightMetersPerSecond);
-            SmartDashboard.putNumber("left setpoint", wheelVelocities.leftMetersPerSecond);
-
-            SmartDashboard.putNumber("actual right", drive.getRightSideVelocityMetersPerSecond());
-            SmartDashboard.putNumber("actual left", drive.getLeftSideVelocityMetersPerSecond());
+            trajectoryFollowerLeftVelocitySetpointLogger.update(
+                    wheelVelocities.leftMetersPerSecond);
+            trajectoryFollowerRightVelocitySetpointLogger.update(
+                    wheelVelocities.rightMetersPerSecond);
 
             drive.setVoltages(
                     wheelVelocities.leftMetersPerSecond, wheelVelocities.rightMetersPerSecond);
@@ -165,6 +200,11 @@ public class TrajectoryFollower extends CommandBase {
 
             drive.setVoltages(leftVoltage, rightVoltage);
         }
+    }
+
+    @Override
+    public void end(boolean interrupted) {
+        drive.setVoltages(0, 0);
     }
 
     @Override

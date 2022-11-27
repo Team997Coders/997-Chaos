@@ -10,6 +10,8 @@
     "types": {
       "/FMSInfo": "FMSInfo",
       "/LiveWindow/Drivetrain": "Subsystem",
+      "/LiveWindow/Launcher": "Subsystem",
+      "/LiveWindow/Ungrouped/DigitalInput[6]": "Digital Input",
       "/LiveWindow/Ungrouped/PIDController[10]": "PIDController",
       "/LiveWindow/Ungrouped/PIDController[11]": "PIDController",
       "/LiveWindow/Ungrouped/PIDController[12]": "PIDController",
@@ -70,9 +72,15 @@
       "/LiveWindow/Ungrouped/navX-Sensor[1]": "Gyro",
       "/LiveWindow/Vision": "Subsystem",
       "/SmartDashboard/DashboardChooser[0]": "String Chooser",
-      "/SmartDashboard/Field": "Field2d"
+      "/SmartDashboard/Field": "Field2d",
+      "/SmartDashboard/hoodVisualization": "Mechanism2d"
     },
     "windows": {
+      "/LiveWindow/Ungrouped/Scheduler": {
+        "window": {
+          "visible": true
+        }
+      },
       "/SmartDashboard/DashboardChooser[0]": {
         "window": {
           "visible": true

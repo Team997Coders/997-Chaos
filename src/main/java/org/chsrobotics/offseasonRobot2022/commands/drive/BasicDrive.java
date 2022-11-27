@@ -14,11 +14,10 @@ See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with this program. 
 If not, see <https://www.gnu.org/licenses/>.
 */
-package org.chsrobotics.offseasonRobot2022.commands.teleop;
+package org.chsrobotics.offseasonRobot2022.commands.drive;
 
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import java.util.function.Supplier;
-import org.chsrobotics.lib.telemetry.HighLevelLogger;
 import org.chsrobotics.offseasonRobot2022.Constants;
 import org.chsrobotics.offseasonRobot2022.subsystems.Drivetrain;
 
@@ -43,11 +42,6 @@ public class BasicDrive extends CommandBase {
     }
 
     @Override
-    public void initialize() {
-        HighLevelLogger.logMessage("BasicDrive command started");
-    }
-
-    @Override
     public void execute() {
         drivetrain.setVoltages(
                 Constants.GlobalConstants.GLOBAL_NOMINAL_VOLTAGE_VOLTS
@@ -59,6 +53,5 @@ public class BasicDrive extends CommandBase {
     @Override
     public void end(boolean interrupted) {
         drivetrain.setVoltages(0, 0);
-        HighLevelLogger.logMessage("BasicDrive command ended (interrupted: " + interrupted + ")");
     }
 }

@@ -18,45 +18,64 @@ package org.chsrobotics.offseasonRobot2022.commands.util;
 
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.CommandBase;
-import org.chsrobotics.lib.telemetry.HighLevelLogger;
-import org.chsrobotics.offseasonRobot2022.subsystems.Drivetrain;
 
-/** Command to trigger the calibration sequence of the robot's IMU. */
-public class CalibrateIMU extends CommandBase {
+/** */
+public class RunnableCommand extends CommandBase {
     private final Timer timer = new Timer();
-    private final Drivetrain drive;
+
+    private final Runnable init;
+    private final Runnable end;
+
+    private final double durationSeconds;
+
+    private boolean runsWhileDisabled = false;
 
     /**
-     * Constructs a CalibrateIMU command.
-     *
-     * @param IMU The drivetrain to calibrate the IMU of.
+     * @param init
+     * @param end
+     * @param durationSeconds
      */
-    public CalibrateIMU(Drivetrain drive) {
-        addRequirements(drive);
-        this.drive = drive;
+    public RunnableCommand(Runnable init, Runnable end, double durationSeconds) {
+        this.init = init;
+        this.end = end;
+
+        this.durationSeconds = durationSeconds;
+    }
+
+    /**
+     * @param init
+     */
+    public RunnableCommand(Runnable init) {
+        this(init, null, 0);
+    }
+
+    /**
+     * @param runsWhileDisabled
+     */
+    public void setRunsWhileDisabled(boolean runsWhileDisabled) {
+        this.runsWhileDisabled = runsWhileDisabled;
     }
 
     @Override
     public boolean runsWhenDisabled() {
-        return true;
+        return runsWhileDisabled;
     }
 
     @Override
     public void initialize() {
-        drive.startCalibration();
         timer.reset();
         timer.start();
-        HighLevelLogger.logMessage("CalibrateIMU started");
+
+        if (init != null) init.run();
     }
 
     @Override
     public void end(boolean interrupted) {
-        timer.stop();
-        HighLevelLogger.logMessage("CalibrateIMU ended: " + timer.get() + " seconds");
+        if (end != null) end.run();
     }
 
     @Override
     public boolean isFinished() {
-        return drive.isCalibrated();
+        return (durationSeconds >= 0 && timer.get() >= durationSeconds);
     }
 }

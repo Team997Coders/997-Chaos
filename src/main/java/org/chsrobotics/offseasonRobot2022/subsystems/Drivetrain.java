@@ -20,8 +20,6 @@ import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import com.kauailabs.navx.frc.AHRS;
-import edu.wpi.first.hal.SimDouble;
-import edu.wpi.first.hal.simulation.SimDeviceDataJNI;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -31,8 +29,6 @@ import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.DifferentialDrivetrainSim;
-import edu.wpi.first.wpilibj.simulation.EncoderSim;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import org.chsrobotics.lib.telemetry.Logger;
 import org.chsrobotics.offseasonRobot2022.Constants.LocalizationConstants;
@@ -46,9 +42,6 @@ public class Drivetrain extends SubsystemBase {
 
     private final VictorSPX frontRight = new VictorSPX(DrivetrainConstants.FRONT_RIGHT_CANID);
     private final VictorSPX backRight = new VictorSPX(DrivetrainConstants.BACK_RIGHT_CANID);
-
-    private double leftSideAppliedVoltage = 0;
-    private double rightSideAppliedVoltage = 0;
 
     private double robotCenterAbsDistanceMeters = 0;
 
@@ -77,6 +70,11 @@ public class Drivetrain extends SubsystemBase {
     private final Logger<Double> leftVelocityLogger =
             new Logger<>("leftVelocityMetersPerSecond", subdirString);
 
+    private final Logger<Double> leftAppliedVoltageLogger =
+            new Logger<>("leftAppliedVoltage", subdirString);
+    private final Logger<Double> rightAppliedVoltageLogger =
+            new Logger<>("rightAppliedVoltage", subdirString);
+
     private final Logger<Double> frontRightCurrentLogger =
             new Logger<>("frontRightCurrentAmps", subdirString);
     private final Logger<Double> backRightCurrentLogger =
@@ -93,14 +91,7 @@ public class Drivetrain extends SubsystemBase {
     private final Logger<Boolean> calibrationStateLogger =
             new Logger<>("isCalibrating", subdirString);
 
-    private SimDouble simAngleRadians =
-            new SimDouble(
-                    SimDeviceDataJNI.getSimValueHandle(
-                            SimDeviceDataJNI.getSimDeviceHandle("navX-Sensor[0]"), "Yaw"));
     private final Timer simCalibrationTimer = new Timer();
-
-    private EncoderSim rightEncoderSim = new EncoderSim(rightEncoder);
-    private EncoderSim leftEncoderSim = new EncoderSim(leftEncoder);
 
     private DifferentialDrivetrainSim drivetrainSim =
             new DifferentialDrivetrainSim(
@@ -145,11 +136,10 @@ public class Drivetrain extends SubsystemBase {
      * @param rightSideVoltage The voltage (in volts) to apply to the front and back right motors.
      */
     public void setVoltages(double leftSideVoltage, double rightSideVoltage) {
-        SmartDashboard.putNumber("left side set voltage", leftSideVoltage);
-        SmartDashboard.putNumber("right side set voltage", rightSideVoltage);
+        leftAppliedVoltageLogger.update(leftSideVoltage);
+        rightAppliedVoltageLogger.update(rightSideVoltage);
 
-        leftSideAppliedVoltage = leftSideVoltage;
-        rightSideAppliedVoltage = rightSideVoltage;
+        drivetrainSim.setInputs(leftSideVoltage, rightSideVoltage);
 
         frontLeft.set(
                 ControlMode.PercentOutput, leftSideVoltage / RobotController.getBatteryVoltage());
@@ -168,9 +158,13 @@ public class Drivetrain extends SubsystemBase {
      * @return The distance, in meters.
      */
     public double getLeftSideDistanceMeters() {
-        return (leftEncoder.getDistance() / DrivetrainConstants.ENCODER_CPR)
-                * Math.PI
-                * DrivetrainConstants.WHEEL_DIAMETER_M;
+        if (Robot.isReal()) {
+            return (leftEncoder.getDistance() / DrivetrainConstants.ENCODER_CPR)
+                    * Math.PI
+                    * DrivetrainConstants.WHEEL_DIAMETER_M;
+        } else {
+            return drivetrainSim.getLeftPositionMeters();
+        }
     }
 
     /**
@@ -179,9 +173,13 @@ public class Drivetrain extends SubsystemBase {
      * @return The distance, in meters.
      */
     public double getRightSideDistanceMeters() {
-        return (rightEncoder.getDistance() / DrivetrainConstants.ENCODER_CPR)
-                * Math.PI
-                * DrivetrainConstants.WHEEL_DIAMETER_M;
+        if (Robot.isReal()) {
+            return (rightEncoder.getDistance() / DrivetrainConstants.ENCODER_CPR)
+                    * Math.PI
+                    * DrivetrainConstants.WHEEL_DIAMETER_M;
+        } else {
+            return drivetrainSim.getRightPositionMeters();
+        }
     }
 
     /**
@@ -190,10 +188,14 @@ public class Drivetrain extends SubsystemBase {
      * @return The filtered velocity, in meters/second.
      */
     public double getLeftSideVelocityMetersPerSecond() {
-        return leftEncoderVelocityFilter.calculate(
-                (leftEncoder.getRate() / DrivetrainConstants.ENCODER_CPR)
-                        * Math.PI
-                        * DrivetrainConstants.WHEEL_DIAMETER_M);
+        if (Robot.isReal()) {
+            return leftEncoderVelocityFilter.calculate(
+                    (leftEncoder.getRate() / DrivetrainConstants.ENCODER_CPR)
+                            * Math.PI
+                            * DrivetrainConstants.WHEEL_DIAMETER_M);
+        } else {
+            return drivetrainSim.getLeftVelocityMetersPerSecond();
+        }
     }
 
     /**
@@ -202,10 +204,14 @@ public class Drivetrain extends SubsystemBase {
      * @return The filtered velocity, in meters/second.
      */
     public double getRightSideVelocityMetersPerSecond() {
-        return rightEncoderVelocityFilter.calculate(
-                (rightEncoder.getRate() / DrivetrainConstants.ENCODER_CPR)
-                        * Math.PI
-                        * DrivetrainConstants.WHEEL_DIAMETER_M);
+        if (Robot.isReal()) {
+            return rightEncoderVelocityFilter.calculate(
+                    (rightEncoder.getRate() / DrivetrainConstants.ENCODER_CPR)
+                            * Math.PI
+                            * DrivetrainConstants.WHEEL_DIAMETER_M);
+        } else {
+            return drivetrainSim.getRightVelocityMetersPerSecond();
+        }
     }
 
     /** Resets the position of right- and left- side encoders. */
@@ -237,7 +243,7 @@ public class Drivetrain extends SubsystemBase {
         if (Robot.isReal()) {
             return IMU.getRotation2d();
         } else {
-            return new Rotation2d(simAngleRadians.get());
+            return drivetrainSim.getHeading();
         }
     }
 
@@ -314,9 +320,6 @@ public class Drivetrain extends SubsystemBase {
         backRightCurrentLogger.update(
                 Robot.getCurrentAmps(DrivetrainConstants.BACK_RIGHT_PDP_CHANNEL));
 
-        SmartDashboard.putNumber("left", getLeftSideDistanceMeters());
-        SmartDashboard.putNumber("right", getRightSideDistanceMeters());
-
         gyroAngleLogger.update(getRotationGyro().getRadians());
         calibrationStateLogger.update(isCalibrating());
     }
@@ -324,23 +327,5 @@ public class Drivetrain extends SubsystemBase {
     @Override
     public void simulationPeriodic() {
         drivetrainSim.update(0.02);
-
-        drivetrainSim.setInputs(leftSideAppliedVoltage, rightSideAppliedVoltage);
-
-        double metersToTicksScaling =
-                (DrivetrainConstants.ENCODER_CPR
-                        / (Math.PI * DrivetrainConstants.WHEEL_DIAMETER_M));
-
-        rightEncoderSim.setCount(
-                (int) (drivetrainSim.getRightPositionMeters() * metersToTicksScaling));
-        rightEncoderSim.setRate(
-                (int) (drivetrainSim.getRightVelocityMetersPerSecond() * metersToTicksScaling));
-
-        leftEncoderSim.setCount(
-                (int) (drivetrainSim.getLeftPositionMeters() * metersToTicksScaling));
-        leftEncoderSim.setRate(
-                (int) (drivetrainSim.getLeftVelocityMetersPerSecond() * metersToTicksScaling));
-
-        simAngleRadians.set(drivetrainSim.getHeading().getRadians());
     }
 }

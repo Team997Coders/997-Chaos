@@ -29,6 +29,7 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import java.util.ArrayList;
+import org.chsrobotics.lib.telemetry.Logger;
 import org.chsrobotics.offseasonRobot2022.Constants.LocalizationConstants;
 import org.chsrobotics.offseasonRobot2022.Constants.SubsystemConstants.DrivetrainConstants;
 import org.chsrobotics.offseasonRobot2022.Constants.SubsystemConstants.VisionConstants;
@@ -69,6 +70,12 @@ public class Localizer {
                     VisionConstants.CAMERA_RESOLUTION_HORIZONTAL,
                     VisionConstants.CAMERA_RESOLUTION_VERTICAL,
                     VisionConstants.CONTOUR_THRESHOLD);
+
+    private final String subdirString = "localization";
+    private final Logger<Double[]> odometryPoseLogger =
+            new Logger<>("odometryPoseMetersRadians", subdirString);
+    private final Logger<Double[]> fusedPoseLogger =
+            new Logger<>("fusedPoseMetersRadians", subdirString);
 
     /**
      * Constructs a Localizer.
@@ -194,6 +201,20 @@ public class Localizer {
         if (!Robot.isReal()) {
             simVision.processFrame(getFusedPose());
         }
+
+        odometryPoseLogger.update(
+                new Double[] {
+                    getOdometryPose().getX(),
+                    getOdometryPose().getY(),
+                    getOdometryPose().getRotation().getRadians()
+                });
+
+        fusedPoseLogger.update(
+                new Double[] {
+                    getFusedPose().getX(),
+                    getFusedPose().getY(),
+                    getFusedPose().getRotation().getRadians()
+                });
     }
 
     /**
