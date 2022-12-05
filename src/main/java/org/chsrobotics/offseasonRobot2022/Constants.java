@@ -207,9 +207,37 @@ public final class Constants {
 
             public static final GearRatioHelper MOTOR_TO_FLYWHEEL = new GearRatioHelper(18, 22);
         }
+
+        public static final class IndexerConstants {
+            public static final double UPPER_SERVO_CLOSED = 0;
+            public static final double LOWER_SERVO_CLOSED = 0;
+
+            public static final double UPPER_SERVO_OPEN = 1;
+            public static final double LOWER_SERVO_OPEN = 1;
+
+            public static final int LOWER_BREAKBEAM_DIO = 0;
+            public static final int UPPER_BREAKBEAM_DIO = 0;
+
+            public static final int LOWER_SERVO_PWM = 0;
+            public static final int UPPER_SERVO_PWM = 0;
+
+            public static final int INTAKE_MOTOR_CANID = 0;
+            public static final int INTAKE_MOTOR_CURRENT_LIMIT = 40;
+
+            public static final boolean LOWER_BREAMBEAM_BALL_PRESENT_WHEN_TRUE = true;
+            public static final boolean UPPER_BREAKBEAM_BALL_PRESENT_WHEN_TRUE = true;
+
+            public static final boolean INTAKE_MOTOR_INVERTED = false;
+
+            public static final int INTAKE_MOTOR_PDP_CHANNEL = 0;
+        }
     }
 
     public static final class CommandConstants {
+        public static final class IndexCommandConstants {
+            public static final double INTAKE_MOTOR_OPEN_LOOP_VOLTAGE = 4;
+        }
+
         public static final class TrajectoryFollowerConstants {
             public static final double RAMSETE_CONVERGENCE = 2;
             public static final double RAMSETE_DAMPING = 0.7;
