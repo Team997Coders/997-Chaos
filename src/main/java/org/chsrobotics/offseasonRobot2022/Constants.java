@@ -172,11 +172,8 @@ public final class Constants {
             public static final double HOOD_KA = 1; // volts / (rad/s^2)
 
             public static final double HOOD_KP = 12;
-            public static final double HOOD_KI = 5;
-            public static final double HOOD_KD = 1;
-
-            public static final double HOOD_MAX_VEL = 2 * Math.PI; // rad / s
-            public static final double HOOD_MAX_ACCEL = 4 * Math.PI; // rad / s^2
+            public static final double HOOD_KI = 2;
+            public static final double HOOD_KD = 8;
 
             public static final int HOOD_ENCODER_VELOCITY_SMOOTHING_SAMPLES = 10;
 
@@ -189,14 +186,14 @@ public final class Constants {
             public static final double HOOD_ENCODER_ERROR_RADIANS_STDDEV = 0.001;
 
             public static final double FLYWHEEL_KS = 1.5; // volts
-            public static final double FLYWHEEL_KV = 0.0075; // volts / (rad/s)
+            public static final double FLYWHEEL_KV = 0.05; // volts / (rad/s)
             public static final double FLYWHEEL_KA = 0.01; // volts / (rad/s^2)
 
-            public static final double FLYWHEEL_KP = 0.3;
-            public static final double FLYWHEEL_KI = 0;
+            public static final double FLYWHEEL_KP = 0.5;
+            public static final double FLYWHEEL_KI = 0.000005;
             public static final double FLYWHEEL_KD = 0;
 
-            public static final double FLYWHEEL_MOMENT = 0.01; // kg m^2
+            public static final double FLYWHEEL_MOMENT = 0.04; // kg m^2
 
             public static final double FLYWHEEL_ENCODER_ERROR_RADIANS_STDDEV = 0.001;
 
@@ -215,11 +212,11 @@ public final class Constants {
             public static final double UPPER_SERVO_OPEN = 1;
             public static final double LOWER_SERVO_OPEN = 1;
 
-            public static final int LOWER_BREAKBEAM_DIO = 0;
+            public static final int LOWER_BREAKBEAM_DIO = 1;
             public static final int UPPER_BREAKBEAM_DIO = 0;
 
             public static final int LOWER_SERVO_PWM = 0;
-            public static final int UPPER_SERVO_PWM = 0;
+            public static final int UPPER_SERVO_PWM = 1;
 
             public static final int INTAKE_MOTOR_CANID = 0;
             public static final int INTAKE_MOTOR_CURRENT_LIMIT = 40;

@@ -210,6 +210,6 @@ public class TrajectoryFollower extends CommandBase {
     @Override
     public boolean isFinished() {
         if (trajectory != null) return (timer.get() >= trajectory.getTotalTimeSeconds());
-        else return true;
+        return true;
     }
 }

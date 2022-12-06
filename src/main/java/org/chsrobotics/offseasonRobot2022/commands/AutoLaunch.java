@@ -21,25 +21,22 @@ import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import java.util.HashMap;
 import java.util.List;
-import java.util.TreeMap;
-import org.chsrobotics.lib.math.MultiPointInterpolator;
+import org.chsrobotics.lib.commands.ConsumerCommand;
+import org.chsrobotics.lib.util.Tuple2;
 import org.chsrobotics.offseasonRobot2022.Constants.CommandConstants.AutoLaunchConstants;
 import org.chsrobotics.offseasonRobot2022.Constants.SubsystemConstants.DrivetrainConstants;
 import org.chsrobotics.offseasonRobot2022.Constants.SubsystemConstants.LEDDisplayConstants;
 import org.chsrobotics.offseasonRobot2022.Localizer;
 import org.chsrobotics.offseasonRobot2022.commands.drive.AutoPivot;
+import org.chsrobotics.offseasonRobot2022.commands.index.Index;
 import org.chsrobotics.offseasonRobot2022.commands.launcher.LauncherController;
-import org.chsrobotics.offseasonRobot2022.commands.util.ConditionalRunnableCommand;
-import org.chsrobotics.offseasonRobot2022.commands.util.ConsumerCommand;
 import org.chsrobotics.offseasonRobot2022.subsystems.Drivetrain;
-import org.chsrobotics.offseasonRobot2022.subsystems.IndexingStandIn;
+import org.chsrobotics.offseasonRobot2022.subsystems.Indexer;
 import org.chsrobotics.offseasonRobot2022.subsystems.LEDDisplay;
 import org.chsrobotics.offseasonRobot2022.subsystems.Launcher;
 
 /** */
 public class AutoLaunch extends ParallelCommandGroup {
-    private final MultiPointInterpolator flywheelInterpolator;
-    private final MultiPointInterpolator hoodInterpolator;
 
     /**
      * @param localization
@@ -54,31 +51,24 @@ public class AutoLaunch extends ParallelCommandGroup {
             Drivetrain drivetrain,
             Launcher launcher,
             LEDDisplay display,
-            IndexingStandIn indexer,
+            Indexer indexer,
             HashMap<Double, List<Double>> trackingSetpoints) {
-        flywheelInterpolator = new MultiPointInterpolator(new TreeMap<>());
-        hoodInterpolator = new MultiPointInterpolator(new TreeMap<>());
-
-        for (Double key : trackingSetpoints.keySet()) {
-            flywheelInterpolator.putNewPair(key, trackingSetpoints.get(key).get(0));
-            hoodInterpolator.putNewPair(key, trackingSetpoints.get(key).get(1));
-        }
 
         if (indexer.hasBall()) {
             ConsumerCommand<Integer> ledPreparing =
-                    new ConsumerCommand<>(
-                            display,
+                    new ConsumerCommand<Integer>(
                             display::setAnimation,
                             LEDDisplayConstants.LAUNCHER_PREPARING_LED_ANIMATION);
+
             ledPreparing.setName("LEDAnimationPreparing");
 
             ConsumerCommand<Double> drivetrainStop =
                     new ConsumerCommand<>(
-                            drivetrain,
                             drivetrain::setVoltages,
-                            List.of(0.0, 0.0),
+                            Tuple2.of(0.0, 0.0),
                             null,
-                            AutoLaunchConstants.DRIVETRAIN_INITIAL_FREEZE_DURATION_SECONDS);
+                            AutoLaunchConstants.DRIVETRAIN_INITIAL_FREEZE_DURATION_SECONDS,
+                            drivetrain);
             drivetrainStop.setName("DrivetrainStop");
 
             ConsumerCommand<NeutralMode> drivetrainBrake =
@@ -91,9 +81,9 @@ public class AutoLaunch extends ParallelCommandGroup {
 
             ConsumerCommand<Integer> ledLaunching =
                     new ConsumerCommand<>(
-                            display,
                             display::setAnimation,
-                            LEDDisplayConstants.LAUNCHER_LAUNCHING_LED_ANIMATION);
+                            LEDDisplayConstants.LAUNCHER_LAUNCHING_LED_ANIMATION,
+                            drivetrain);
             ledLaunching.setName("LEDAnimationLaunching");
 
             LauncherController launcherController =
@@ -105,25 +95,21 @@ public class AutoLaunch extends ParallelCommandGroup {
             AutoPivot autoPivot =
                     new AutoPivot(drivetrain, this::getDesiredFieldRelRotationRadians);
 
-            ConditionalRunnableCommand feedCommand =
-                    new ConditionalRunnableCommand(
-                            indexer,
-                            indexer::feed,
-                            null,
-                            () -> (indexer.hasBallReady() && launcherController.atSetpoints()));
+            Index indexCommand =
+                    new Index(indexer, autoPivot::atSetpoint, launcherController::atSetpoints);
 
             addCommands(
                     new SequentialCommandGroup(
                             ledPreparing,
                             new ParallelCommandGroup(drivetrainStop, drivetrainBrake),
                             autoPivot,
-                            new ParallelCommandGroup(drivetrainStop, drivetrainBrake),
-                            ledLaunching,
-                            feedCommand),
-                    launcherController);
+                            ledLaunching),
+                    launcherController,
+                    indexCommand);
         }
     }
 
+    @SuppressWarnings("unused")
     private double getDistanceMetersToTarget() {
         // TODO: implement
         return 0;
@@ -135,10 +121,10 @@ public class AutoLaunch extends ParallelCommandGroup {
     }
 
     private double getDesiredHoodAngleRadians() {
-        return hoodInterpolator.sample(getDistanceMetersToTarget());
+        return 0;
     }
 
     private double getDesiredFlywheelVelocityRadiansPerSecond() {
-        return flywheelInterpolator.sample(getDistanceMetersToTarget());
+        return 0;
     }
 }

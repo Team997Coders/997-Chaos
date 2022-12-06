@@ -21,6 +21,7 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import java.util.function.Supplier;
+import org.chsrobotics.lib.telemetry.Logger;
 import org.chsrobotics.offseasonRobot2022.Constants.CommandConstants.AutoPivotConstants;
 import org.chsrobotics.offseasonRobot2022.subsystems.Drivetrain;
 
@@ -38,6 +39,11 @@ public class AutoPivot extends CommandBase {
                             AutoPivotConstants.MAX_A_RADS_PER_SEC_SQ));
 
     private final Supplier<Double> desiredGyroAngleRadiansLambda;
+
+    private final String subdirString = "autoPivot";
+
+    private final Logger<Double> setpointAngleRadiansLogger =
+            new Logger<>("setpointRadians", subdirString);
 
     /**
      * @param drivetrain
@@ -68,7 +74,11 @@ public class AutoPivot extends CommandBase {
 
     @Override
     public void execute() {
-        controller.setGoal(desiredGyroAngleRadiansLambda.get());
+        double goal = desiredGyroAngleRadiansLambda.get();
+
+        controller.setGoal(goal);
+
+        setpointAngleRadiansLogger.update(goal);
 
         double feedback = controller.calculate(drivetrain.getRotationGyro().getRadians());
         double feedforward = 0;

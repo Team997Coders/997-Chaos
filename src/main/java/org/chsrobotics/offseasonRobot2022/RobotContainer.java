@@ -19,10 +19,6 @@ package org.chsrobotics.offseasonRobot2022;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import java.io.IOException;
@@ -32,8 +28,10 @@ import java.util.List;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.chsrobotics.lib.commands.ConditionalEndRunnableCommand;
+import org.chsrobotics.lib.input.JoystickButton;
+import org.chsrobotics.lib.input.XboxController;
 import org.chsrobotics.lib.telemetry.HighLevelLogger;
-import org.chsrobotics.lib.util.DashboardChooser;
 import org.chsrobotics.offseasonRobot2022.Constants.CommandConstants.LauncherControllerConstants;
 import org.chsrobotics.offseasonRobot2022.Constants.InputConstants;
 import org.chsrobotics.offseasonRobot2022.Constants.SubsystemConstants.DrivetrainConstants;
@@ -41,22 +39,30 @@ import org.chsrobotics.offseasonRobot2022.Constants.SubsystemConstants.LauncherC
 import org.chsrobotics.offseasonRobot2022.Constants.SubsystemConstants.VisionConstants;
 import org.chsrobotics.offseasonRobot2022.aprilTags.AprilTag;
 import org.chsrobotics.offseasonRobot2022.aprilTags.TagLayout;
-import org.chsrobotics.offseasonRobot2022.commands.drive.BasicDrive;
+import org.chsrobotics.offseasonRobot2022.commands.AutoLaunch;
+import org.chsrobotics.offseasonRobot2022.commands.drive.TeleopDrive;
 import org.chsrobotics.offseasonRobot2022.commands.drive.TrajectoryFollower;
 import org.chsrobotics.offseasonRobot2022.commands.launcher.LauncherController;
-import org.chsrobotics.offseasonRobot2022.commands.util.ConditionalEndRunnableCommand;
 import org.chsrobotics.offseasonRobot2022.subsystems.Drivetrain;
+import org.chsrobotics.offseasonRobot2022.subsystems.Indexer;
+import org.chsrobotics.offseasonRobot2022.subsystems.LEDDisplay;
 import org.chsrobotics.offseasonRobot2022.subsystems.Launcher;
 import org.chsrobotics.offseasonRobot2022.subsystems.Vision;
 
 public class RobotContainer {
-    private final Joystick driveJoystick = new Joystick(InputConstants.JOYSTICK_PORT);
+    private final XboxController driveJoystick = new XboxController(InputConstants.JOYSTICK_PORT);
+
+    private final JoystickButton autoLaunchToggleButton = driveJoystick.AButton();
 
     private final Drivetrain drivetrain = new Drivetrain();
 
     private final Vision vision = new Vision(VisionConstants.CAMERA_1_NAME);
 
     private final Launcher launcher = new Launcher();
+
+    private final LEDDisplay ledDisplay = new LEDDisplay();
+
+    private final Indexer indexer = new Indexer();
 
     private final TagLayout testLayout =
             new TagLayout(new AprilTag(0, new Pose3d(5, 5, 0, new Rotation3d())));
@@ -65,16 +71,11 @@ public class RobotContainer {
 
     private long cycleCounter = 0;
 
-    private final HashMap<Command, Timer> commandTimers = new HashMap<>();
-
-    private final BasicDrive basicDrive =
-            new BasicDrive(
+    private final TeleopDrive basicDrive =
+            new TeleopDrive(
                     drivetrain,
-                    // () -> driveJoystick.getRawAxis(InputConstants.JOYSTICK_LEFT_VERTICAL_AXIS),
-                    // () ->
-                    // driveJoystick.getRawAxis(InputConstants.JOYSTICK_RIGHT_HORIZONTAL_AXIS));
-                    () -> -driveJoystick.getRawAxis(1),
-                    () -> -driveJoystick.getRawAxis(0));
+                    driveJoystick.leftStickVerticalAxis(),
+                    driveJoystick.rightStickHorizontalAxis());
 
     private final LauncherController launcherStandby =
             new LauncherController(
@@ -82,28 +83,21 @@ public class RobotContainer {
                     LauncherControllerConstants.FLYWHEEL_STANDBY_VELOCITY_RADS_PER_SECOND,
                     LauncherControllerConstants.HOOD_DEFAULT_ANGLE_RADIANS);
 
+    private final AutoLaunch autoLaunch;
+
     private final ConditionalEndRunnableCommand calibrateIMU =
             new ConditionalEndRunnableCommand(
-                    drivetrain, drivetrain::startCalibration, drivetrain::isCalibrated);
-
-    private final DashboardChooser<Paths> autoModeChooser =
-            DashboardChooser.fromEnum(Paths.class, Paths.noneTraj, true);
+                    drivetrain::startCalibration, null, drivetrain::isCalibrated, drivetrain);
 
     public RobotContainer() {
         calibrateIMU.setName("CalibrateIMU");
         calibrateIMU.setRunsWhileDisabled(true);
 
-        configureButtonBindings();
-
         setDefaultCommands();
 
-        SmartDashboard.putData(autoModeChooser);
+        HighLevelLogger.publishSendable("fullField", localizer.getFullField());
 
         drivetrain.setNeutralmode(DrivetrainConstants.DEFAULT_NEUTRAL_MODE);
-
-        CommandScheduler.getInstance().onCommandInitialize(this::logCommandInit);
-        CommandScheduler.getInstance().onCommandFinish(this::logCommandFinished);
-        CommandScheduler.getInstance().onCommandInterrupt(this::logCommandInterrupted);
 
         HashMap<Double, List<Double>> launcherMap = new HashMap<>();
 
@@ -124,14 +118,16 @@ public class RobotContainer {
             }
 
         } catch (IOException exc) {
-            HighLevelLogger.logMessage("LAUNCHER MAP FILE COULD NOT BE READ");
-            DriverStation.reportError("LAUNCHER MAP FILE COULD NOT BE READ", false);
+            HighLevelLogger.logError("LAUNCHER MAP FILE COULD NOT BE READ");
 
             launcherMap.put(0.0, List.of(0.0, 0.0));
         }
-    }
 
-    private void configureButtonBindings() {}
+        autoLaunch =
+                new AutoLaunch(localizer, drivetrain, launcher, ledDisplay, indexer, launcherMap);
+
+        autoLaunchToggleButton.toggleWhenActive(autoLaunch);
+    }
 
     private void setDefaultCommands() {
         CommandScheduler.getInstance().setDefaultCommand(drivetrain, basicDrive);
@@ -140,7 +136,7 @@ public class RobotContainer {
 
     public Command getAutonomousCommand() {
         return new TrajectoryFollower(
-                drivetrain, localizer, autoModeChooser.getSelected().trajectory, true);
+                drivetrain, localizer, Config.autoModeChooser.getSelected().trajectory, true);
     }
 
     /** Schedules all commands that should run when the robot is initialized. */
@@ -151,7 +147,6 @@ public class RobotContainer {
 
     /** Method called once every robot cycle to perform RobotContainer-specific periodic tasks. */
     public void periodic() {
-        SmartDashboard.putData(localizer.getFullField());
         cycleCounter++;
         localizer.update();
     }
@@ -168,32 +163,5 @@ public class RobotContainer {
                         + launcher.getFlywheelAbsDistanceRadians());
         HighLevelLogger.logMessage(
                 "Total absolute hood distance (radians): " + launcher.getHoodAbsDistanceRadians());
-    }
-
-    private void logCommandInit(Command command) {
-        HighLevelLogger.logMessage("Command started: " + command.getName());
-
-        Timer timer = new Timer();
-        timer.start();
-
-        commandTimers.put(command, timer);
-    }
-
-    private void logCommandFinished(Command command) {
-        double timeSeconds = commandTimers.get(command).get();
-
-        HighLevelLogger.logMessage(
-                "Command finished: " + command.getName() + " after " + timeSeconds + " seconds");
-
-        commandTimers.remove(command);
-    }
-
-    private void logCommandInterrupted(Command command) {
-        double timeSeconds = commandTimers.get(command).get();
-
-        HighLevelLogger.logMessage(
-                "Command interrupted: " + command.getName() + " after " + timeSeconds + " seconds");
-
-        commandTimers.remove(command);
     }
 }

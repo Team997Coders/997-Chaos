@@ -19,12 +19,11 @@ package org.chsrobotics.offseasonRobot2022;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
-import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import org.chsrobotics.lib.telemetry.HighLevelLogger;
-import org.chsrobotics.lib.telemetry.Logger;
 
 public class Robot extends TimedRobot {
 
@@ -46,23 +45,6 @@ public class Robot extends TimedRobot {
 
     private final RobotContainer robotContainer = new RobotContainer();
 
-    private final String subdirString = "System";
-
-    private final Logger<Boolean> isBrownedOutLogger = new Logger<>("isBrownedOut", subdirString);
-
-    private final Logger<Double> canUtilizationLogger =
-            new Logger<>(
-                    HighLevelLogger.getLog(), "canUtilizationPercent", subdirString, false, true);
-    private final Logger<Double> batteryVoltageLogger =
-            new Logger<>(
-                    HighLevelLogger.getLog(), "batteryVoltageVolts", subdirString, false, true);
-    private final Logger<Double> totalCurrentLogger =
-            new Logger<>(HighLevelLogger.getLog(), "totalCurrentAmps", subdirString, false, true);
-    private final Logger<Double> logger3p3vCurrent =
-            new Logger<>(HighLevelLogger.getLog(), "3p3vCurrentAmps", subdirString, false, true);
-    private final Logger<Double> logger5vCurrent =
-            new Logger<>(HighLevelLogger.getLog(), "5vCurrentAmps", subdirString, false, true);
-
     private State previousRobotState = null;
 
     @Override
@@ -73,24 +55,19 @@ public class Robot extends TimedRobot {
         robotContainer.scheduleStartupCommands();
 
         DriverStation.startDataLog(HighLevelLogger.getLog(), true);
+
+        SmartDashboard.putData("autoModeSelector", Config.autoModeChooser);
     }
 
     @Override
     public void robotPeriodic() {
         CommandScheduler.getInstance().run();
 
-        canUtilizationLogger.update(RobotController.getCANStatus().percentBusUtilization);
-        batteryVoltageLogger.update(RobotController.getBatteryVoltage());
-        totalCurrentLogger.update(pdp.getTotalCurrent());
-        logger3p3vCurrent.update(RobotController.getCurrent3V3());
-        logger5vCurrent.update(RobotController.getCurrent5V());
-
-        isBrownedOutLogger.update(
-                (RobotController.getBatteryVoltage() <= RobotController.getBrownoutVoltage()));
-
         robotContainer.periodic();
 
         previousRobotState = getRobotState();
+
+        // HighLevelLogger.logPeriodic();
     }
 
     @Override
