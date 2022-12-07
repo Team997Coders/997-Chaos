@@ -29,6 +29,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.chsrobotics.lib.commands.ConditionalEndRunnableCommand;
+import org.chsrobotics.lib.input.JoystickAxis;
 import org.chsrobotics.lib.input.JoystickButton;
 import org.chsrobotics.lib.input.XboxController;
 import org.chsrobotics.lib.telemetry.HighLevelLogger;
@@ -71,11 +72,10 @@ public class RobotContainer {
 
     private long cycleCounter = 0;
 
-    private final TeleopDrive basicDrive =
-            new TeleopDrive(
-                    drivetrain,
-                    driveJoystick.leftStickVerticalAxis(),
-                    driveJoystick.rightStickHorizontalAxis());
+    private final JoystickAxis leftVertical = driveJoystick.leftStickVerticalAxis();
+    private final JoystickAxis rightHorizontal = driveJoystick.rightStickHorizontalAxis();
+
+    private final TeleopDrive basicDrive;
 
     private final LauncherController launcherStandby =
             new LauncherController(
@@ -92,6 +92,10 @@ public class RobotContainer {
     public RobotContainer() {
         calibrateIMU.setName("CalibrateIMU");
         calibrateIMU.setRunsWhileDisabled(true);
+
+        leftVertical.setInverted(true);
+
+        basicDrive = new TeleopDrive(drivetrain, leftVertical, rightHorizontal);
 
         setDefaultCommands();
 

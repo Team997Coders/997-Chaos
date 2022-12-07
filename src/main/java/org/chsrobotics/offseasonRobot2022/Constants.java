@@ -96,8 +96,8 @@ public final class Constants {
 
             public static final int ENCODER_CPR = 2048;
 
-            public static final boolean LEFT_MOTORS_INVERTED = true;
-            public static final boolean RIGHT_MOTORS_INVERTED = false;
+            public static final boolean LEFT_MOTORS_INVERTED = false;
+            public static final boolean RIGHT_MOTORS_INVERTED = true;
 
             public static final boolean LEFT_ENCODER_INVERTED = true;
             public static final boolean RIGHT_ENCODER_INVERTED = true;
@@ -120,10 +120,10 @@ public final class Constants {
             public static final double MODEL_ROT_KA = 0.4; // volts per (m/s^2)
 
             public static final double MODEL_LIN_KS = 0.57; // volts
-            public static final double MODEL_LIN_KV = 2.15; // volts per (m/s)
-            public static final double MODEL_LIN_KA = 0.5; // volts per (m/s^2)
+            public static final double MODEL_LIN_KV = 0.5; // volts per (m/s)
+            public static final double MODEL_LIN_KA = 0.01; // volts per (m/s^2)
 
-            public static final double WHEEL_VELOCITY_KP = 0.1;
+            public static final double WHEEL_VELOCITY_KP = 10;
             public static final double WHEEL_VELOCITY_KI = 0;
             public static final double WHEEL_VELOCITY_KD = 0;
 
