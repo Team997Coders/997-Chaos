@@ -6,6 +6,8 @@ package frc.robot;
 
 import java.sql.DriverPropertyInfo;
 
+import org.chsrobotics.lib.telemetry.HighLevelLogger;
+
 import com.ctre.phoenix.Logger;
 
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -43,8 +45,8 @@ private CommandScheduler scheduler = CommandScheduler.getInstance();
 
 
 
-  private final TeleopControl teleopControlForBigKids = new TeleopControl(drivetrain, shooter, 1.0);
-  private final TeleopControl teleopControlForLittleKids = new TeleopControl(drivetrain, shooter, 0.35);
+  private final TeleopControl teleopControl = new TeleopControl(drivetrain, shooter);
+
 
   boolean lastButton = false;
   boolean isSlowMode = true;  
@@ -55,6 +57,7 @@ private CommandScheduler scheduler = CommandScheduler.getInstance();
    */
   @Override
   public void robotInit() {
+    HighLevelLogger.getInstance().startLogging();
     // Instantiate our RobotContainer.  This will perform all our button bindings, and put our
     // autonomous chooser on the dashboard.
     m_robotContainer = new RobotContainer();
@@ -69,6 +72,8 @@ private CommandScheduler scheduler = CommandScheduler.getInstance();
    */
   @Override
   public void robotPeriodic() {
+    HighLevelLogger.getInstance().updateLogs();
+
     // Runs the Scheduler.  This is responsible for polling buttons, adding newly-scheduled
     // commands, running already-scheduled commands, removing finished or interrupted commands,
     // and running subsystem periodic() methods.  This must be called from the robot's periodic
@@ -121,22 +126,25 @@ private CommandScheduler scheduler = CommandScheduler.getInstance();
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
-    boolean bButton = driverController.button(2).getAsBoolean();
+
+    scheduler.schedule(teleopControl);
+
+    // boolean bButton = driverController.button(2).getAsBoolean();
 
     
-    if(bButton == false && lastButton == true) {
-      isSlowMode = !isSlowMode;
-    } 
+    // if(bButton == false && lastButton == true) {
+    //   isSlowMode = !isSlowMode;
+    // } 
 
-    if(isSlowMode == true) {
-      scheduler.cancelAll();
-      scheduler.schedule(teleopControlForLittleKids);
-    } else {
-      scheduler.cancelAll();
-      scheduler.schedule(teleopControlForBigKids);
-    }
+    // if(isSlowMode == true) {
+    //   scheduler.cancelAll();
+    //   scheduler.schedule(teleopControlForLittleKids);
+    // } else {
+    //   scheduler.cancelAll();
+    //   scheduler.schedule(teleopControlForBigKids);
+    // }
 
-    lastButton = bButton;
+    // lastButton = bButton;
     
    /* boolean rightBumper = driverController.rightBumper().getAsBoolean();
     boolean leftTrigger = driverController.leftTrigger().getAsBoolean();

@@ -21,6 +21,9 @@ public final class Constants {
       public static int BACK_LEFT_CAN_ID = 3;
       public static boolean INVERT_LEFT = true;
       public static boolean INVERT_RIGHT = false;
+
+      public static int LINEAR_RAMP_RATE = 10;
+      public static int ANGULAR_RAMP_RATE = 10;
   }
   public static int DRIVE_CONTROLLER_PORT = 0;
 
@@ -32,6 +35,9 @@ public final class Constants {
 
     public static boolean FLYWHEEL_IS_INVERTED = true;
   }
+
+
+
 
 
 }

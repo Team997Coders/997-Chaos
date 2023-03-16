@@ -4,6 +4,9 @@
 
 package frc.robot.subsystems;
 
+import org.chsrobotics.lib.drive.differential.DifferentialDriveMode;
+import org.chsrobotics.lib.drive.differential.DifferentialDrivetrainInput;
+
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -25,9 +28,9 @@ public class Drivetrain extends SubsystemBase {
     
   }
 
-  public void setOutput(double left, double right) {
-    this.left.set(left);
-    this.right.set(right);
+  public void setOutput(DifferentialDrivetrainInput input) {
+    this.left.set(input.left);
+    this.right.set(input.right);
   }
 
   @Override
