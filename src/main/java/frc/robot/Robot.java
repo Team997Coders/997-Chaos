@@ -12,9 +12,11 @@ import com.ctre.phoenix.Logger;
 
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import frc.Config;
 import frc.robot.commands.TeleopControl;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.Lights;
@@ -58,6 +60,9 @@ private CommandScheduler scheduler = CommandScheduler.getInstance();
   @Override
   public void robotInit() {
     HighLevelLogger.getInstance().startLogging();
+
+    SmartDashboard.putData("Drive mode", Config.DRIVE_MODE_CHOOSER);
+
     // Instantiate our RobotContainer.  This will perform all our button bindings, and put our
     // autonomous chooser on the dashboard.
     m_robotContainer = new RobotContainer();
